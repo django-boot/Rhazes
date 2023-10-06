@@ -1,2 +1,0 @@
-# Rhazes
-Django DI manager
