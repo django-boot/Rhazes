@@ -1,7 +1,16 @@
 import importlib
+import inspect
 from typing import Optional, List, Set
 
 from django.conf import settings
+
+
+def class_scanner(module: str):
+    result = []
+    for name, cls in inspect.getmembers(importlib.import_module(module), inspect.isclass):
+        if cls.__module__ == module:
+            result.append(cls)
+    return result
 
 
 class ModuleScanner:
