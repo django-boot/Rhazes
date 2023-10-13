@@ -3,10 +3,9 @@ from rhazes.registry import BeanRegistry
 from rhazes.scanner import ModuleScanner, class_scanner
 
 
-class ApplicationContext(object):
-
+class ApplicationContext:
     def __new__(cls):
-        if not hasattr(cls, 'instance'):
+        if not hasattr(cls, "instance"):
             cls.instance = super(ApplicationContext, cls).__new__(cls)
         return cls.instance
 

@@ -7,7 +7,7 @@ from django.conf import settings
 
 def class_scanner(module: str):
     result = []
-    for name, cls in inspect.getmembers(importlib.import_module(module), inspect.isclass):
+    for _, cls in inspect.getmembers(importlib.import_module(module), inspect.isclass):
         if cls.__module__ == module:
             result.append(cls)
     return result
@@ -19,7 +19,9 @@ class ModuleScanner:
     """
 
     def __init__(self, roots_to_scan: Optional[List[str]] = None):
-        self.roots_to_scan = roots_to_scan if roots_to_scan is not None else self._roots_to_scan()
+        self.roots_to_scan = (
+            roots_to_scan if roots_to_scan is not None else self._roots_to_scan()
+        )
 
     @classmethod
     def _roots_to_scan(cls):
@@ -39,13 +41,16 @@ class ModuleScanner:
 
         # Then, we respect __init__.py file to get imported submodules.
         import inspect
-        submodules = [o[0] for o in inspect.getmembers(module)
-                      if inspect.ismodule(o[1])]
+
+        submodules = [
+            o[0] for o in inspect.getmembers(module) if inspect.ismodule(o[1])
+        ]
         if submodules:
             return submodules
 
         # Finally we can just scan for submodules via pkgutil.
         import pkgutil
+
         # pkgutill will invoke `importlib.machinery.all_suffixes()` to
         # determine whether a file is a module or not, so if you get
         # any submoudles that are unexpected to get, you need to check
@@ -60,9 +65,7 @@ class ModuleScanner:
     def scan(self) -> Set[str]:
         packages = set()
         for pkg in self.roots_to_scan:
-            packages.update(
-                self._scan(pkg)
-            )
+            packages.update(self._scan(pkg))
         return packages
 
     def _scan(self, pkg) -> Set[str]:
@@ -71,7 +74,5 @@ class ModuleScanner:
         for item in self._list_submodules(mod):
             sub_m = f"{pkg}.{item}"
             packages.add(sub_m)
-            packages.update(
-                self._scan(sub_m)
-            )
+            packages.update(self._scan(sub_m))
         return packages

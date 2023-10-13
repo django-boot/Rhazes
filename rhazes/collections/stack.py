@@ -2,7 +2,6 @@ from collections import deque
 
 
 class UniqueStack(deque):
-
     def _validate_unique(self, value):
         for i in self:
             if value == i:

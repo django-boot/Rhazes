@@ -3,12 +3,15 @@ from django.test import TestCase
 from rhazes.dependency import DependencyProcessor
 from rhazes.exceptions import DependencyCycleException, MissingDependencyException
 from rhazes.scanner import class_scanner
-from tests.data.di.di_cycle import DepA as CycleDepA, DepB as CycleDepB, DepC as CycleDepC
+from tests.data.di.di_cycle import (
+    DepA as CycleDepA,
+    DepB as CycleDepB,
+    DepC as CycleDepC,
+)
 from tests.data.di.di_sane import DepA as SaneDepA, DepB as SaneDepB, DepC as SaneDepC
 
 
 class DependencyTestCase(TestCase):
-
     def setUp(self) -> None:
         self.cycle_classes = class_scanner("tests.data.di.di_cycle")
         self.assertIn(CycleDepA, self.cycle_classes)
@@ -23,7 +26,13 @@ class DependencyTestCase(TestCase):
     def test_cycle(self):
         with self.assertRaises(DependencyCycleException) as assertion:
             DependencyProcessor(self.cycle_classes).process()
-            self.assertTrue(all([item for item in self.cycle_classes if item in assertion.exception.stack]))
+            self.assertTrue(
+                all(
+                    item
+                    for item in self.cycle_classes
+                    if item in assertion.exception.stack
+                )
+            )
 
     def test_dependency_process(self):
         objects = DependencyProcessor(self.sane_classes).process()

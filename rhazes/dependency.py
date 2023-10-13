@@ -1,9 +1,9 @@
 import inspect
+import logging
 from pydoc import locate
+
 from rhazes.collections.stack import UniqueStack
 from rhazes.exceptions import DependencyCycleException, MissingDependencyException
-import logging
-
 
 logger = logging.getLogger(__name__)
 
@@ -21,7 +21,6 @@ class DependencyNode:
 
 
 class DependencyProcessor:
-
     def __init__(self, all_classes: set):
         self.all_classes = all_classes
         self.objects = {}
@@ -54,8 +53,10 @@ class DependencyProcessor:
                 continue
 
             if k in ["args", "kwargs"]:
-                logger.warning(f"Service class {cls} has default __init__ which uses *args, **kwargs. "
-                               f"It's impossible to detect the inputs")
+                logger.warning(
+                    f"Service class {cls} has default __init__ which uses *args, **kwargs. "
+                    f"It's impossible to detect the inputs"
+                )
                 continue
 
             clazz = None
@@ -72,7 +73,9 @@ class DependencyProcessor:
                 args.append(None)
                 dependency_position[clazz] = i
             elif v.default == v.empty:
-                raise MissingDependencyException(cls, clazz)  # Todo: depends on a object that is not in service classes
+                raise MissingDependencyException(
+                    cls, clazz
+                )
             else:
                 args.append(v.default)
             i += 1

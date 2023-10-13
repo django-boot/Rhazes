@@ -4,7 +4,6 @@ from rhazes.scanner import ModuleScanner
 
 
 class ModuleScannerTestCase(TestCase):
-
     def test_scanner(self):
         scanner = ModuleScanner(["tests.data.scanner"])
         results = scanner.scan()
