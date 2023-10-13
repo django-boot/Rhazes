@@ -1,7 +1,11 @@
 import inspect
 from pydoc import locate
 from rhazes.collections.stack import UniqueStack
-from rhazes.exceptions import DependencyCycleException
+from rhazes.exceptions import DependencyCycleException, MissingDependencyException
+import logging
+
+
+logger = logging.getLogger(__name__)
 
 
 class DependencyNode:
@@ -49,6 +53,11 @@ class DependencyProcessor:
             if k == "self":
                 continue
 
+            if k in ["args", "kwargs"]:
+                logger.warning(f"Service class {cls} has default __init__ which uses *args, **kwargs. "
+                               f"It's impossible to detect the inputs")
+                continue
+
             clazz = None
 
             if type(v.annotation) == str:
@@ -61,9 +70,9 @@ class DependencyProcessor:
             if clazz in self.all_classes:
                 dependencies.append(clazz)
                 args.append(None)
-                dependency_position[v.annotation] = i
+                dependency_position[clazz] = i
             elif v.default == v.empty:
-                raise Exception()  # Todo: depends on a object that is not in service classes
+                raise MissingDependencyException(cls, clazz)  # Todo: depends on a object that is not in service classes
             else:
                 args.append(v.default)
             i += 1
@@ -118,7 +127,9 @@ class DependencyProcessor:
 
     def build(self, node: DependencyNode):
         metadata = self.node_metadata_registry[node.cls]
+        args: list = metadata["args"]
+        dependency_positions = metadata["dependency_position"]
         for dep in metadata["dependencies"]:
-            metadata["args"][metadata["dependency_position"][dep]] = self.objects[dep]
+            args[dependency_positions[dep]] = self.objects[dep]
         obj = node.cls(*metadata["args"])
         self.objects[node.cls] = obj
