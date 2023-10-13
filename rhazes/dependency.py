@@ -73,9 +73,7 @@ class DependencyProcessor:
                 args.append(None)
                 dependency_position[clazz] = i
             elif v.default == v.empty:
-                raise MissingDependencyException(
-                    cls, clazz
-                )
+                raise MissingDependencyException(cls, clazz)
             else:
                 args.append(v.default)
             i += 1
