@@ -22,7 +22,7 @@ class DependencyNode:
 
 class DependencyProcessor:
 
-    def __init__(self, all_classes: list):
+    def __init__(self, all_classes: set):
         self.all_classes = all_classes
         self.objects = {}
         self.node_registry = {}
