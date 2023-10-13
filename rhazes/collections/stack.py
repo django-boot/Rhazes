@@ -6,7 +6,7 @@ class UniqueStack(deque):
     def _validate_unique(self, value):
         for i in self:
             if value == i:
-                raise Exception("Item already in stack")  # Todo
+                raise ValueError("Item already in stack")
 
     def append(self, *args, **kwargs):
         self._validate_unique(args[0])

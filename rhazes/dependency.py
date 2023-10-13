@@ -1,15 +1,19 @@
 import inspect
-
+from pydoc import locate
 from rhazes.collections.stack import UniqueStack
+from rhazes.exceptions import DependencyCycleException
 
 
 class DependencyNode:
-    def __init__(self, cls, dependency_position, args):
+    def __init__(self, cls):
         self.cls = cls
         self.dependencies = []
 
     def add_dependency(self, dependency: "DependencyNode"):
         self.dependencies.append(dependency)
+
+    def __str__(self):
+        return str(self.cls)
 
 
 class DependencyProcessor:
@@ -17,7 +21,6 @@ class DependencyProcessor:
     def __init__(self, all_classes: list):
         self.all_classes = all_classes
         self.objects = {}
-        self.listeners = {}
         self.node_registry = {}
         self.node_metadata_registry = {}
 
@@ -28,7 +31,7 @@ class DependencyProcessor:
         self.node_registry[cls] = node
         return node
 
-    def register_metadata(self, cls) -> tuple:
+    def register_metadata(self, cls):
         """
 
         :param cls: class to get arguments of
@@ -45,37 +48,38 @@ class DependencyProcessor:
         for k, v in signature.parameters.items():
             if k == "self":
                 continue
-            if v.annotation in self.all_classes:
-                dependencies.append(v.annotation)
-                args[i] = None
+
+            clazz = None
+
+            if type(v.annotation) == str:
+                clazz = locate(f"{cls.__module__}.{v.annotation}")
+                if clazz is None:
+                    raise Exception(f"Failed to locate {v.annotation}")
+            else:
+                clazz = v.annotation
+
+            if clazz in self.all_classes:
+                dependencies.append(clazz)
+                args.append(None)
                 dependency_position[v.annotation] = i
             elif v.default == v.empty:
                 raise Exception()  # Todo: depends on a object that is not in service classes
             else:
-                args[i] = v.default
+                args.append(v.default)
             i += 1
         self.node_metadata_registry[cls] = {
             "dependencies": dependencies,
             "dependency_position": dependency_position,
             "args": args,
         }
-
-    def make_object(self, cls, dependencies: list, dependency_position: dict, args: list):
-        for dep in dependencies:
-            if dep not in self.objects:
-                self.add_listener(dep, lambda x: self.make_object(cls, dependencies, dependency_position, args))
-                return
-        for dep in dependencies:
-            args[dependency_position[dep]] = self.objects[dep]
-        obj = cls(*args)
-        self.objects[cls] = obj
+        return dependencies
 
     def process(self):
         to_process = []
 
         # Building Graph
         for cls in self.all_classes:
-            dependencies, dependency_position, args = self.register_metadata(cls)
+            dependencies = self.register_metadata(cls)
             node = self.register_node(cls)
             for dependency in dependencies:
                 node.add_dependency(self.register_node(dependency))
@@ -103,7 +107,10 @@ class DependencyProcessor:
         """
         if node.cls in self.objects:
             return
-        stack.append(node)
+        try:
+            stack.append(node)
+        except ValueError:  # item is not unique in the stack
+            raise DependencyCycleException(stack, node)
         for child in node.dependencies:
             self._process(child, stack)
         self.build(node)
