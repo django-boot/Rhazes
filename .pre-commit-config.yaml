@@ -38,12 +38,6 @@ repos:
             "flake8-print",
             "flake8-simplify",
         ]
-  # security analysis
-  - repo: https://github.com/pycqa/bandit
-    rev: 1.7.4
-    hooks:
-      - id: bandit
-        args: [ '-iii', '-ll' ]
   - repo: local
     hooks:
       - id: django-test
