@@ -21,7 +21,7 @@ If everything works perfectly, you can access the beans using `ApplicationContex
 
 ## Example
 
-Lets assume we have service classes like below: 
+Lets assume we have service classes like below:
 
 ```python
 from abc import ABC, abstractmethod
@@ -39,14 +39,14 @@ class UserStorage(ABC):
 class DatabaseUserStorage(UserStorage):
 
   def get_user(user_id: int):
-    return None 
+    return None
 
 
 @service(_for=UserStorage, primary=True)  # set as primary implementation of UserStorage
 class CacheUserStorage(UserStorage):
 
   def get_user(user_id: int):
-    return None 
+    return None
 
 
 @service()
@@ -83,4 +83,3 @@ database_user_storage: DatabaseUserStorage = application_context.beans.get_bean(
 ## Contribution
 
 Read the [contribution guidelines](https://github.com/django-boot/Rhazes/blob/main/CONTRIBUTING.md).
-

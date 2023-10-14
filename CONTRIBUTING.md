@@ -22,8 +22,11 @@
 
   # now commit
   git commit -m "message here should follow conventional commit messages"
+
+  # If you have already committed your changes but still want to run pre-commit pipeline:
+  pre-commit run --all-files
   ```
 
-Thanks! :heart: :heart: :heart:
+Thanks! :heart:
 
 Django Boot - Rhazes
