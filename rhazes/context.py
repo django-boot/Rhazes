@@ -1,4 +1,4 @@
-from rhazes.dependency import DependencyProcessor
+from rhazes.dependency import DependencyResolver
 from rhazes.registry import BeanRegistry
 from rhazes.scanner import ModuleScanner, class_scanner
 
@@ -20,11 +20,11 @@ class ApplicationContext:
         for module in modules:
             scanned_classes = class_scanner(module)
             for scanned_class in scanned_classes:
-                if hasattr(scanned_class, "service_details"):
+                if hasattr(scanned_class, "bean_details"):
                     classes.add(scanned_class)
 
-        for cls, obj in DependencyProcessor(classes).process().items():
-            self.beans.register_service(cls, obj)
+        for cls, obj in DependencyResolver(classes).resolve().items():
+            self.beans.register_bean(cls, obj)
 
     def initialize(self):
         if self._initialized:

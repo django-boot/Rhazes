@@ -12,7 +12,7 @@ _There is no published version yet_. Written for Django 4.2 using python 3.9. Ot
 
 ## How it works
 
-Once Rhazes `ApplicationContext` is initialized it will scan for classes marked with `@service` decorator under packages listed in `settings.INSTALLED_APPS` or `settings.RHAZES_PACKAGES` (preferably).
+Once Rhazes `ApplicationContext` is initialized it will scan for classes marked with `@bean` decorator under packages listed in `settings.INSTALLED_APPS` or `settings.RHAZES_PACKAGES` (preferably).
 
 Afterwards, it creates a graph of these classes and their dependencies to each other and starts to create objects for each class and register them as beans under `ApplicationContext().beans`.
 
@@ -21,11 +21,11 @@ If everything works perfectly, you can access the beans using `ApplicationContex
 
 ## Example
 
-Lets assume we have service classes like below:
+Lets assume we have bean classes like below:
 
 ```python
 from abc import ABC, abstractmethod
-from rhazes.decorator import service
+from rhazes.decorator import bean
 
 
 class UserStorage(ABC):
@@ -35,21 +35,21 @@ class UserStorage(ABC):
     pass
 
 
-@service(_for=UserStorage, primary=False)  # primary is False by default too
+@bean(_for=UserStorage, primary=False)  # primary is False by default too
 class DatabaseUserStorage(UserStorage):
 
   def get_user(user_id: int):
     return None
 
 
-@service(_for=UserStorage, primary=True)  # set as primary implementation of UserStorage
+@bean(_for=UserStorage, primary=True)  # set as primary implementation of UserStorage
 class CacheUserStorage(UserStorage):
 
   def get_user(user_id: int):
     return None
 
 
-@service()
+@bean()
 class ProductManager:
 
   def __init__(self, user_storage: UserStorage):

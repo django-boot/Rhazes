@@ -1,11 +1,11 @@
 from django.test import TestCase, override_settings
 
 from rhazes.context import ApplicationContext
-from tests.data.di.di_context import SomeABC, DepAI1, DepB, DepC
+from tests.data.di.context.di_context import SomeABC, DepAI1, DepB, DepC
 
 
-@override_settings(RHAZES_PACKAGES=["tests.data.di"])
-class DependencyTestCase(TestCase):
+@override_settings(RHAZES_PACKAGES=["tests.data.di.context"])
+class ApplicationContextTestCase(TestCase):
     def setUp(self) -> None:
         self.application_context = ApplicationContext()
 

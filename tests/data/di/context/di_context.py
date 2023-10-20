@@ -1,28 +1,34 @@
-from rhazes.decorator import service
+from abc import ABC
+
+from rhazes.decorator import bean
 
 
 class SomeABC:
     pass
 
 
-@service(_for=SomeABC, primary=True)
+@bean(_for=SomeABC, primary=True)
 class DepAI1(SomeABC):
     def __init__(self, dep_b: "DepB"):
         self.dep = dep_b
 
 
-@service(_for=SomeABC)
+@bean(_for=SomeABC)
 class DepAI2(SomeABC):
     def __init__(self, dep_b: "DepB"):
         self.dep = dep_b
 
 
-@service()
+class DepCInterface(ABC):
+    pass
+
+
+@bean()
 class DepB:
-    def __init__(self, dep_c: "DepC"):
+    def __init__(self, dep_c: DepCInterface):
         self.dep = dep_c
 
 
-@service()
-class DepC:
+@bean(_for=DepCInterface)
+class DepC(DepCInterface):
     pass
