@@ -18,3 +18,5 @@ class ApplicationContextTestCase(TestCase):
         self.assertIsNotNone(self.application_context.beans.get_bean(DepAI1))
         self.assertIsNotNone(self.application_context.beans.get_bean(DepB))
         self.assertIsNotNone(self.application_context.beans.get_bean(DepC))
+        dep_b: DepB = self.application_context.beans.get_bean(DepB)
+        self.assertEqual(dep_b.dep, self.application_context.beans.get_bean(DepC))

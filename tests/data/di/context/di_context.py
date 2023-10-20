@@ -29,6 +29,11 @@ class DepB:
         self.dep = dep_c
 
 
-@bean(_for=DepCInterface)
+@bean(_for=DepCInterface, primary=True)
 class DepC(DepCInterface):
+    pass
+
+
+@bean(_for=DepCInterface, primary=False)
+class DepCImp2(DepCInterface):
     pass
