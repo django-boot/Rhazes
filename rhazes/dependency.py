@@ -2,11 +2,9 @@ import inspect
 import logging
 from dataclasses import dataclass
 from pydoc import locate
-from typing import Set, List, Optional, Type, Dict, Iterable
-import copy
+from typing import Set, Optional, Type, Dict, Iterable
 
 from rhazes.collections.stack import UniqueStack
-from rhazes.decorator import BeanDetails
 from rhazes.exceptions import DependencyCycleException, MissingDependencyException
 from rhazes.protocol import BeanProtocol
 
@@ -32,13 +30,18 @@ class DependencyNodeMetadata:
     - dependency_position: dictionary of dependency class positions in arguments
     - args: list of prefilled arguments to be used as *args for constructing
     """
+
     dependencies: list
     dependency_position: dict
     args: list
     bean_for: Optional[Type] = None
 
     @staticmethod
-    def generate(cls: Type[BeanProtocol], bean_classes: Iterable[BeanProtocol], bean_interface_mapping: Dict[Type, Type]):
+    def generate(
+        cls: Type[BeanProtocol],
+        bean_classes: Iterable[BeanProtocol],
+        bean_interface_mapping: Dict[Type, Type],
+    ):
         """
         Generates DependencyNodeMetadata instance for a class (cls) after validating its constructor dependencies
         :param cls: class to generate DependencyNodeMetadata for
@@ -84,11 +87,12 @@ class DependencyNodeMetadata:
             else:
                 args.append(v.default)
             i += 1
-        return DependencyNodeMetadata(dependencies, dependency_position, args, cls.bean_details().bean_for)
+        return DependencyNodeMetadata(
+            dependencies, dependency_position, args, cls.bean_details().bean_for
+        )
 
 
 class DependencyResolver:
-
     def __init__(self, bean_classes: Set[Type[BeanProtocol]]):
         self.bean_classes: Set[Type[BeanProtocol]] = bean_classes
         self.bean_interface_map = {}
@@ -101,9 +105,13 @@ class DependencyResolver:
         # Map list of implementations (value) for each bean interface (value)
         for bean_class in self.bean_classes:
             if bean_class.bean_details().bean_for is not None:
-                bean_classes = self.bean_interface_map.get(bean_class.bean_details().bean_for, [])
+                bean_classes = self.bean_interface_map.get(
+                    bean_class.bean_details().bean_for, []
+                )
                 bean_classes.append(bean_class)
-                self.bean_interface_map[bean_class.bean_details().bean_for] = bean_classes
+                self.bean_interface_map[
+                    bean_class.bean_details().bean_for
+                ] = bean_classes
 
         # Find primary implementation of each interface and update the map
         for bean_for, implementations in self.bean_interface_map.items():
@@ -139,7 +147,9 @@ class DependencyResolver:
         :param cls: class to generate DependencyNodeMetadata for
         :return generated DependencyNodeMetadata
         """
-        metadata = DependencyNodeMetadata.generate(cls, self.bean_classes, self.bean_interface_map)
+        metadata = DependencyNodeMetadata.generate(
+            cls, self.bean_classes, self.bean_interface_map
+        )
         self.node_metadata_registry[cls] = metadata
         return metadata
 
@@ -198,6 +208,8 @@ class DependencyResolver:
             args[dependency_positions[dep]] = self.objects[dep]
         obj = node.cls(*metadata.args)
         self.objects[node.cls] = obj
-        if metadata.bean_for is not None and node.cls == self.bean_interface_map[metadata.bean_for]:
+        if (
+            metadata.bean_for is not None
+            and node.cls == self.bean_interface_map[metadata.bean_for]
+        ):
             self.objects[metadata.bean_for] = obj
-
