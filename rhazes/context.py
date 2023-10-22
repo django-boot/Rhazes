@@ -1,4 +1,5 @@
 from rhazes.dependency import DependencyResolver
+from rhazes.protocol import BeanProtocol, BeanFactory
 from rhazes.registry import BeanRegistry
 from rhazes.scanner import ModuleScanner, class_scanner
 
@@ -15,15 +16,18 @@ class ApplicationContext:
         self.beans = BeanRegistry()
 
     def _initialize_beans(self):
-        classes = set()
+        beans = set()
+        bean_factories = set()
         modules = self._module_scanner.scan()
         for module in modules:
             scanned_classes = class_scanner(module)
             for scanned_class in scanned_classes:
-                if hasattr(scanned_class, "bean_details"):
-                    classes.add(scanned_class)
+                if issubclass(scanned_class, (BeanProtocol,)):
+                    beans.add(scanned_class)
+                elif issubclass(scanned_class, (BeanFactory,)):
+                    bean_factories.add(scanned_class)
 
-        for cls, obj in DependencyResolver(classes).resolve().items():
+        for cls, obj in DependencyResolver(beans, bean_factories).resolve().items():
             self.beans.register_bean(cls, obj)
 
     def initialize(self):

@@ -6,7 +6,7 @@ from typing import Set, Optional, Type, Dict, Iterable
 
 from rhazes.collections.stack import UniqueStack
 from rhazes.exceptions import DependencyCycleException, MissingDependencyException
-from rhazes.protocol import BeanProtocol
+from rhazes.protocol import BeanProtocol, BeanFactory
 
 logger = logging.getLogger(__name__)
 
@@ -35,10 +35,11 @@ class DependencyNodeMetadata:
     dependency_position: dict
     args: list
     bean_for: Optional[Type] = None
+    is_factory: bool = False
 
     @staticmethod
     def generate(
-        cls: Type[BeanProtocol],
+        cls,
         bean_classes: Iterable[BeanProtocol],
         bean_interface_mapping: Dict[Type, Type],
     ):
@@ -87,31 +88,51 @@ class DependencyNodeMetadata:
             else:
                 args.append(v.default)
             i += 1
+
+        bean_for = None
+        is_factory = False
+
+        if issubclass(cls, (BeanProtocol,)):
+            bean_for = cls.bean_details().bean_for
+        elif issubclass(cls, (BeanFactory,)):
+            bean_for = cls.produces()
+            is_factory = True
+
         return DependencyNodeMetadata(
-            dependencies, dependency_position, args, cls.bean_details().bean_for
+            dependencies, dependency_position, args, bean_for, is_factory
         )
 
 
 class DependencyResolver:
-    def __init__(self, bean_classes: Set[Type[BeanProtocol]]):
-        self.bean_classes: Set[Type[BeanProtocol]] = bean_classes
+    def __init__(
+        self,
+        bean_classes: Set[Type[BeanProtocol]] = None,
+        bean_factories: Set[Type[BeanFactory]] = None,
+    ):
+        self.bean_classes: Set[Type[BeanProtocol]] = (
+            bean_classes if bean_classes is not None else set()
+        )
+        self.bean_factories: Set[Type[BeanFactory]] = (
+            bean_factories if bean_factories is not None else set()
+        )
         self.bean_interface_map = {}
         self.fill_bean_interface_map()
         self.objects = {}
         self.node_registry = {}
         self.node_metadata_registry = {}
 
+    def __add_or_init_interface_mapping(self, interface, cls):
+        mapping = self.bean_interface_map.get(interface, [])
+        mapping.append(cls)
+        self.bean_interface_map[interface] = mapping
+
     def fill_bean_interface_map(self):
         # Map list of implementations (value) for each bean interface (value)
         for bean_class in self.bean_classes:
             if bean_class.bean_details().bean_for is not None:
-                bean_classes = self.bean_interface_map.get(
-                    bean_class.bean_details().bean_for, []
+                self.__add_or_init_interface_mapping(
+                    bean_class.bean_details().bean_for, bean_class
                 )
-                bean_classes.append(bean_class)
-                self.bean_interface_map[
-                    bean_class.bean_details().bean_for
-                ] = bean_classes
 
         # Find primary implementation of each interface and update the map
         for bean_for, implementations in self.bean_interface_map.items():
@@ -135,8 +156,8 @@ class DependencyResolver:
         node = DependencyNode(cls)
         self.node_registry[cls] = node
 
-        # If the bean is presenting an interface then
-        if cls.bean_details().bean_for is not None:
+        # If the bean is presenting an interface then register it for that interface too
+        if issubclass(cls, (BeanProtocol,)) and cls.bean_details().bean_for is not None:
             self.node_registry[cls.bean_details().bean_for] = node
 
         return node
@@ -158,11 +179,14 @@ class DependencyResolver:
         Resolves dependencies by building graph, traverse it and returning list of created objects
         :returns dictionary of created objects for each class
         """
+
+        to_graphize = set()
+        to_graphize.update(self.bean_classes)
+        to_graphize.update(self.bean_factories)
         to_process = []
 
         # Building Graph
-
-        for cls in self.bean_classes:
+        for cls in to_graphize:
             metadata = self.register_metadata(cls)
             node = self.register_dependency_node(cls)
             for dependency in metadata.dependencies:
@@ -206,10 +230,18 @@ class DependencyResolver:
         dependency_positions = metadata.dependency_position
         for dep in metadata.dependencies:
             args[dependency_positions[dep]] = self.objects[dep]
-        obj = node.cls(*metadata.args)
-        self.objects[node.cls] = obj
-        if (
-            metadata.bean_for is not None
-            and node.cls == self.bean_interface_map[metadata.bean_for]
+
+        if metadata.is_factory:
+            factory: BeanFactory = node.cls(*metadata.args)
+            obj = factory.produce()
+            clazz = obj.__class__
+        else:
+            obj = node.cls(*metadata.args)
+            clazz = node.cls
+
+        self.objects[clazz] = obj
+        if metadata.bean_for is not None and (
+            metadata.is_factory
+            or node.cls == self.bean_interface_map[metadata.bean_for]
         ):
             self.objects[metadata.bean_for] = obj
