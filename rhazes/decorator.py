@@ -72,15 +72,15 @@ def inject(injections=None, configuration: Dict[Type, InjectionConfiguration] = 
 
         elif callable(obj_of_func):
 
-            if (
-                    obj_of_func.__name__ == "__init__"  # constructor
-            ):
+            if obj_of_func.__name__ == "__init__":  # constructor
+
                 def proxy(obj, *args, **kwargs):
                     inject_kwargs(injections, configuration, obj_of_func, kwargs)
                     return obj_of_func(obj, *args, **kwargs)
 
                 return proxy
             else:
+
                 def proxy(*args, **kwargs):
                     inject_kwargs(injections, configuration, obj_of_func, kwargs)
                     return obj_of_func(*args, **kwargs)
