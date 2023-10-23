@@ -14,9 +14,9 @@ _There is no published version yet_. Written for Django 4.2 using python 3.9. Ot
 
 Once Rhazes `ApplicationContext` is initialized it will scan for classes marked with `@bean` decorator under packages listed in `settings.INSTALLED_APPS` or `settings.RHAZES_PACKAGES` (preferably).
 
-Afterwards, it creates a graph of these classes and their dependencies to each other and starts to create objects for each class and register them as beans under `ApplicationContext().beans`.
+Afterwards, it creates a graph of these classes and their dependencies to each other and starts to create objects for each class and register them as beans under `ApplicationContext`.
 
-If everything works perfectly, you can access the beans using `ApplicationContext().beans.get_bean(CLASS)` for a class.
+If everything works perfectly, you can access the beans using `ApplicationContext.get_bean(CLASS)` for a class.
 
 
 ## Example
@@ -68,7 +68,7 @@ from rhazes.context import ApplicationContext
 from somepackage import UserStorage, DatabaseUserStorage, CacheUserStorage,  ProductManager
 
 
-application_context = ApplicationContext()
+application_context = ApplicationContext
 application_context.initialize()
 
 product_manager: ProductManager = application_context.get_bean(ProductManager)

@@ -1,25 +1,21 @@
 from typing import Optional
+
 from django.utils.functional import SimpleLazyObject
+
 from rhazes.dependency import DependencyResolver
-from rhazes.protocol import BeanProtocol, BeanFactory, DependencyNodeMetadata
+from rhazes.protocol import BeanProtocol, BeanFactory
 from rhazes.scanner import ModuleScanner, class_scanner
 
 
 class ApplicationContext:
-    def __new__(cls):
-        if not hasattr(cls, "instance"):
-            cls.instance = super(ApplicationContext, cls).__new__(cls)
-        return cls.instance
+    _initialized = False
+    _builder_registry = {}
 
-    def __init__(self):
-        self._initialized = False
-        self._module_scanner = ModuleScanner()
-        self._builder_registry = {}
-
-    def _initialize_beans(self):
+    @classmethod
+    def _initialize_beans(cls):
         beans = set()
         bean_factories = set()
-        modules = self._module_scanner.scan()
+        modules = ModuleScanner().scan()
         for module in modules:
             scanned_classes = class_scanner(module)
             for scanned_class in scanned_classes:
@@ -28,29 +24,28 @@ class ApplicationContext:
                 elif issubclass(scanned_class, (BeanFactory,)):
                     bean_factories.add(scanned_class)
 
-        for cls, obj in DependencyResolver(beans, bean_factories).resolve().items():
-            self.register_bean(cls, obj)
+        for clazz, obj in DependencyResolver(beans, bean_factories).resolve().items():
+            cls.register_bean(clazz, obj)
 
-    def initialize(self):
-        if self._initialized:
+    @classmethod
+    def initialize(cls):
+        if cls._initialized:
             return
-        self.register_bean(
-            ApplicationContext,
-            DependencyNodeMetadata(None, None, None, is_singleton=True),
-            lambda context: self,
-        )
-        self._initialize_beans()
-        self._initialized = True
+        cls._initialize_beans()
+        cls._initialized = True
 
-    def register_bean(self, cls, builder, override=False):
-        if cls not in self._builder_registry or override:
-            self._builder_registry[cls] = builder
+    @classmethod
+    def register_bean(cls, clazz, builder, override=False):
+        if clazz not in cls._builder_registry or override:
+            cls._builder_registry[clazz] = builder
 
-    def get_bean(self, of: type) -> Optional:
-        builder = self._builder_registry.get(of)
+    @classmethod
+    def get_bean(cls, of: type) -> Optional:
+        builder = cls._builder_registry.get(of)
         if builder is None:
             return None
-        return builder(self)
+        return builder(cls)
 
-    def get_lazy_bean(self, of: type) -> Optional:
-        return SimpleLazyObject(lambda: self.get_bean(of))
+    @classmethod
+    def get_lazy_bean(cls, of: type) -> Optional:
+        return SimpleLazyObject(lambda: cls.get_bean(of))

@@ -44,9 +44,11 @@ def inject_kwargs(injections, configuration, func, kwargs: dict):
         ):
             lazy = configuration.get(v.annotation, {}).get("lazy", False)
             if lazy:
-                kwargs[k] = ApplicationContext().get_lazy_bean(v.annotation)
+                dep = ApplicationContext.get_lazy_bean(v.annotation)
             else:
-                kwargs[k] = ApplicationContext().get_bean(v.annotation)
+                dep = ApplicationContext.get_bean(v.annotation)
+            if dep is not None:
+                kwargs[k] = dep
         return kwargs
 
 
@@ -70,9 +72,11 @@ def inject(injections=None, configuration: Dict[Type, InjectionConfiguration] = 
 
         elif callable(obj_of_func):
 
-            def proxy(*args, **kwargs):
+            def proxy(**kwargs):
                 inject_kwargs(injections, configuration, obj_of_func, kwargs)
-                return obj_of_func(*args, **kwargs)
+                return obj_of_func(**kwargs)
+
+            return proxy
 
         else:
             # Input is neither class or function

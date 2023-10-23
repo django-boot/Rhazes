@@ -9,7 +9,7 @@ from tests.data.di.factory.di_factory import SomeInterface, TestStringGeneratorB
 @override_settings(RHAZES_PACKAGES=["tests.data.di.context", "tests.data.di.factory"])
 class ApplicationContextTestCase(TestCase):
     def setUp(self) -> None:
-        self.application_context = ApplicationContext()
+        self.application_context = ApplicationContext
         self.application_context.initialize()
 
     def test_bean_context(self):
