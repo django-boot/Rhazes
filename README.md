@@ -16,7 +16,7 @@ Once Rhazes `ApplicationContext` is initialized it will scan for classes marked 
 
 Afterwards, it creates a graph of these classes and their dependencies to each other and starts to create objects for each class and register them as beans under `ApplicationContext`.
 
-If everything works perfectly, you can access the beans using `ApplicationContext.get_bean(CLASS)` for a class.
+If everything works perfectly, you can access the beans using `ApplicationContext.get_bean(CLASS)` to get beans of a type.
 
 
 ## Example
@@ -83,6 +83,28 @@ user_storage: UserStorage = application_context.get_bean(UserStorage)
 cache_user_storage: CacheUserStorage = application_context.get_bean(CacheUserStorage)  # to directly get CacheUserStorage
 database_user_storage: DatabaseUserStorage = application_context.get_bean(DatabaseUserStorage)  # to directly get DatabaseUserStorage
 ```
+
+
+### Bean factory
+
+Bean factories are just classes that _produce_ a bean. They are beans themselves!
+
+```python
+from rhazes.protocol import BeanFactory
+
+@bean
+class SomeBeanFactory(BeanFactory):
+
+    # optional: if you haven't defined "_for" in @bean, you can determine it here 
+    @classmethod
+    def produces(cls):
+        return SomeBean
+    
+    def produce(self):
+        return SomeBean()
+
+```
+
 
 ### Singleton
 
