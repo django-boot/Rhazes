@@ -70,9 +70,12 @@ class ModuleScanner:
 
     def _scan(self, pkg) -> Set[str]:
         packages = set()
-        mod = importlib.import_module(pkg)
-        for item in self._list_submodules(mod):
-            sub_m = f"{pkg}.{item}"
-            packages.add(sub_m)
-            packages.update(self._scan(sub_m))
+        try:
+            mod = importlib.import_module(pkg)
+            for item in self._list_submodules(mod):
+                sub_m = f"{pkg}.{item}"
+                packages.update(self._scan(sub_m))
+            packages.add(pkg)
+        except ModuleNotFoundError:
+            pass
         return packages

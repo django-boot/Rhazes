@@ -62,25 +62,32 @@ def inject(injections=None, configuration: Dict[Type, InjectionConfiguration] = 
             # We are dealing with a class
             @functools.wraps(obj_of_func, updated=())
             class Proxy(obj_of_func):
-                def __int__(self, *args, **kwargs):
+                def __init__(self, *args, **kwargs):
                     inject_kwargs(
                         injections, configuration, obj_of_func.__init__, kwargs
                     )
-                    super().__init__(*args, **kwargs)
+                    super(obj_of_func, self).__init__(*args, **kwargs)
 
             return Proxy
 
         elif callable(obj_of_func):
 
-            def proxy(**kwargs):
-                inject_kwargs(injections, configuration, obj_of_func, kwargs)
-                return obj_of_func(**kwargs)
+            if (
+                    obj_of_func.__name__ == "__init__"  # constructor
+            ):
+                def proxy(obj, *args, **kwargs):
+                    inject_kwargs(injections, configuration, obj_of_func, kwargs)
+                    return obj_of_func(obj, *args, **kwargs)
 
-            return proxy
+                return proxy
+            else:
+                def proxy(*args, **kwargs):
+                    inject_kwargs(injections, configuration, obj_of_func, kwargs)
+                    return obj_of_func(*args, **kwargs)
+
+                return proxy
 
         else:
-            # Input is neither class or function
-            # Todo: raise error
-            pass
+            return obj_of_func
 
     return decorator
