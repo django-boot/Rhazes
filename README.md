@@ -21,7 +21,7 @@ If everything works perfectly, you can access the beans using `ApplicationContex
 
 ## Example
 
-Lets assume we have bean classes like below:
+Let's assume we have bean classes like below:
 
 ```python
 from abc import ABC, abstractmethod
@@ -69,16 +69,111 @@ from somepackage import UserStorage, DatabaseUserStorage, CacheUserStorage,  Pro
 
 
 application_context = ApplicationContext
+# scan packages at settings.INSTALLED_APPS or settings.RHAZES_PACKAGES
 application_context.initialize()
 
+# Get ProductManager bean using its class
 product_manager: ProductManager = application_context.get_bean(ProductManager)
-user_storage: UserStorage = application_context.get_bean(UserStorage)  # this will be CacheUserStorage implementation since primary was set to true
 
+# Get UserStorage (interface) bean
+# this will be CacheUserStorage implementation since primary was set to true
+user_storage: UserStorage = application_context.get_bean(UserStorage)
+
+# Specifically get beans of classes (not the interface)
 cache_user_storage: CacheUserStorage = application_context.get_bean(CacheUserStorage)  # to directly get CacheUserStorage
 database_user_storage: DatabaseUserStorage = application_context.get_bean(DatabaseUserStorage)  # to directly get DatabaseUserStorage
-
 ```
 
+### Singleton
+
+You can define beans as singleton.
+
+```python
+@bean(singleton=True)
+class SomeBean:
+    pass
+```
+
+At this point this bean will always be the same instance when being injected into another class (another bean or `@inject` (read further))
+
+
+### Lazy Bean Dependencies
+
+If the bean you are defining is depended on another bean but you don't want to immediately instantiate that other bean you can mark it as lazy.
+
+```python
+
+@bean
+class DependencyA:
+    pass
+
+
+@bean(lazy_dependencies=[DependencyA])
+class DependencyB:
+    def __int__(self, dependency_a: DependencyA):
+        self.dependency_a = dependency_a
+```
+
+Now `dependency_a` will not be instantiated (built) until there is a call to it from inside `DependencyB` instances.
+
+
+### Injection
+
+You can inject beans into _functions_ or _classes_ as long as your function (or class `__init__` function) has good support for `**kwargs`.
+
+These classes or functions need to be called with determined input parameter names. Example:
+
+```python
+
+@bean
+class SomeBean:
+    pass
+
+
+@inject()
+def function(bean: SomeBean, random_input: str):
+    ...
+
+# You can call it like this:
+function(random_input="something")  # `bean` will be injected automatically
+```
+
+Example for classes:
+
+```python
+@bean
+class SomeBean:
+    pass
+
+
+@inject
+class MyClazz:
+    def __init__(self, bean: SomeBean, random_input: str):
+        ...
+
+MyClazz(random_input="something")  # `bean` will be injected automatically
+```
+
+To explicitly inject some beans and not others:
+
+```python
+@bean
+class SomeBean1:
+    pass
+
+
+@bean
+class SomeBean2:
+    pass
+
+
+@inject(injections=[SomeBean1])
+def function(bean1: SomeBean1, bean2: SomeBean2, random_input: str):
+    ...
+
+# You can call it like this:
+function(bean2=SomeBean2(), random_input="something")  # `bean1` will be injected automatically
+```
 
 ## Contribution
 
