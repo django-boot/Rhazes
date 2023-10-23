@@ -95,11 +95,11 @@ from rhazes.protocol import BeanFactory
 @bean
 class SomeBeanFactory(BeanFactory):
 
-    # optional: if you haven't defined "_for" in @bean, you can determine it here 
+    # optional: if you haven't defined "_for" in @bean, you can determine it here
     @classmethod
     def produces(cls):
         return SomeBean
-    
+
     def produce(self):
         return SomeBean()
 
@@ -196,6 +196,30 @@ def function(bean1: SomeBean1, bean2: SomeBean2, random_input: str):
 # You can call it like this:
 function(bean2=SomeBean2(), random_input="something")  # `bean1` will be injected automatically
 ```
+
+
+### Inject into Django views
+
+At this stage only injection into class views are tested. Example:
+
+```python
+@inject()
+class NameGeneratorView(APIView):
+    # You could optionally use @inject() here or at .setup()
+    def __init__(self, string_generator: StringGeneratorService, **kwargs):
+        self.string_generator = string_generator
+        super(NameGeneratorView, self).__init__(**kwargs)
+
+    def get(self, request, *args, **kwargs):
+        qs: dict = request.GET.dict()
+        return Response(data={
+            "name": self.string_generator.generate(
+                int(qs.get("length", 10))
+            )
+        })
+```
+
+This example is taken [from here](https://github.com/django-boot/Rhazes-Test/blob/main/app1/views.py).
 
 ## Contribution
 
