@@ -1,6 +1,7 @@
+from typing import Optional
+from django.utils.functional import SimpleLazyObject
 from rhazes.dependency import DependencyResolver
-from rhazes.protocol import BeanProtocol, BeanFactory
-from rhazes.registry import BeanRegistry
+from rhazes.protocol import BeanProtocol, BeanFactory, DependencyNodeMetadata
 from rhazes.scanner import ModuleScanner, class_scanner
 
 
@@ -13,7 +14,7 @@ class ApplicationContext:
     def __init__(self):
         self._initialized = False
         self._module_scanner = ModuleScanner()
-        self.beans = BeanRegistry()
+        self._builder_registry = {}
 
     def _initialize_beans(self):
         beans = set()
@@ -28,10 +29,28 @@ class ApplicationContext:
                     bean_factories.add(scanned_class)
 
         for cls, obj in DependencyResolver(beans, bean_factories).resolve().items():
-            self.beans.register_bean(cls, obj)
+            self.register_bean(cls, obj)
 
     def initialize(self):
         if self._initialized:
             return
+        self.register_bean(
+            ApplicationContext,
+            DependencyNodeMetadata(None, None, None, is_singleton=True),
+            lambda context: self,
+        )
         self._initialize_beans()
         self._initialized = True
+
+    def register_bean(self, cls, builder, override=False):
+        if cls not in self._builder_registry or override:
+            self._builder_registry[cls] = builder
+
+    def get_bean(self, of: type) -> Optional:
+        builder = self._builder_registry.get(of)
+        if builder is None:
+            return None
+        return builder(self)
+
+    def get_lazy_bean(self, of: type) -> Optional:
+        return SimpleLazyObject(lambda: self.get_bean(of))

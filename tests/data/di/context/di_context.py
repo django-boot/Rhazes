@@ -25,11 +25,12 @@ class DepCInterface(ABC):
 
 @bean()
 class DepB:
-    def __init__(self, dep_c: DepCInterface):
-        self.dep = dep_c
+    def __init__(self, dep_c: DepCInterface, dep_d: "DepD"):
+        self.dep_c = dep_c
+        self.dep_d = dep_d
 
 
-@bean(_for=DepCInterface, primary=True)
+@bean(_for=DepCInterface, primary=True, singleton=True)
 class DepC(DepCInterface):
     pass
 
@@ -37,3 +38,15 @@ class DepC(DepCInterface):
 @bean(_for=DepCInterface, primary=False)
 class DepCImp2(DepCInterface):
     pass
+
+
+@bean()
+class DepD:
+    def name(self):
+        return "DepD"
+
+
+@bean(lazy_dependencies=[DepD])
+class DepE:
+    def __init__(self, dep_d: DepD):
+        self.dep_d = dep_d

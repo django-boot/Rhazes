@@ -1,106 +1,50 @@
-import inspect
-import logging
-from dataclasses import dataclass
-from pydoc import locate
-from typing import Set, Optional, Type, Dict, Iterable
+from typing import Set, Type
 
 from rhazes.collections.stack import UniqueStack
-from rhazes.exceptions import DependencyCycleException, MissingDependencyException
-from rhazes.protocol import BeanProtocol, BeanFactory
-
-logger = logging.getLogger(__name__)
-
-
-class DependencyNode:
-    def __init__(self, cls):
-        self.cls = cls
-        self.dependencies = []
-
-    def add_dependency(self, dependency: "DependencyNode"):
-        self.dependencies.append(dependency)
-
-    def __str__(self):
-        return str(self.cls)
+from rhazes.exceptions import DependencyCycleException
+from rhazes.protocol import (
+    BeanProtocol,
+    BeanFactory,
+    DependencyNodeMetadata,
+    DependencyNode,
+)
 
 
-@dataclass
-class DependencyNodeMetadata:
-    """
-    - dependencies: list of dependency classes
-    - dependency_position: dictionary of dependency class positions in arguments
-    - args: list of prefilled arguments to be used as *args for constructing
-    """
+class NodeBuilder:
+    def __init__(self, node: DependencyNode, metadata: DependencyNodeMetadata):
+        self.node = node
+        self.metadata = metadata
 
-    dependencies: list
-    dependency_position: dict
-    args: list
-    bean_for: Optional[Type] = None
-    is_factory: bool = False
+    def build(self, application_context):
+        args: list = self.metadata.args
+        dependency_positions = self.metadata.dependency_position
+        for dep in self.metadata.dependencies:
+            lazy = (
+                self.metadata.lazy_dependencies is not None
+                and dep in self.metadata.lazy_dependencies
+            )
+            args[dependency_positions[dep]] = (
+                application_context.get_lazy_bean(dep)
+                if lazy
+                else application_context.get_bean(dep)
+            )
+        if self.metadata.is_factory:
+            factory: BeanFactory = self.node.cls(*self.metadata.args)
+            return factory.produce()
+        else:
+            return self.node.cls(*self.metadata.args)
 
-    @staticmethod
-    def generate(
-        cls,
-        bean_classes: Iterable[BeanProtocol],
-        bean_interface_mapping: Dict[Type, Type],
-    ):
-        """
-        Generates DependencyNodeMetadata instance for a class (cls) after validating its constructor dependencies
-        :param cls: class to generate DependencyNodeMetadata for
-        :param bean_classes: other bean classes, possible to depend on
-        :param bean_interface_mapping: possible classes to depend on
-        :return: generated DependencyNodeMetadata
-        """
-        args = []
-        dependencies = []
-        dependency_position = {}
-        signature = inspect.signature(cls.__init__)
-        i = 0
-        for k, v in signature.parameters.items():
-            if k == "self":
-                continue
 
-            if k in ["args", "kwargs"]:
-                logger.warning(
-                    f"bean class {cls} has default __init__ which uses *args, **kwargs. "
-                    f"It's impossible to detect the inputs"
-                )
-                continue
+class SingletonNodeBuilder:
+    def __init__(self, builder: NodeBuilder):
+        self.builder = builder
+        self.instance = None
 
-            clazz = None
-
-            if type(v.annotation) == str:
-                clazz = locate(f"{cls.__module__}.{v.annotation}")
-                if clazz is None:
-                    raise Exception(f"Failed to locate {v.annotation}")
-            else:
-                clazz = v.annotation
-
-            if clazz in bean_classes:
-                dependencies.append(clazz)
-                args.append(None)
-                dependency_position[clazz] = i
-            elif clazz in bean_interface_mapping:
-                dependencies.append(bean_interface_mapping[clazz])
-                args.append(None)
-                dependency_position[bean_interface_mapping[clazz]] = i
-            elif v.default == v.empty:
-                raise MissingDependencyException(cls, clazz)
-            else:
-                args.append(v.default)
-            i += 1
-
-        bean_for = None
-        is_factory = False
-
-        if issubclass(cls, (BeanProtocol,)):
-            bean_for = cls.bean_details().bean_for
-        elif issubclass(cls, (BeanFactory,)):
-            bean_for = cls.produces()
-            is_factory = True
-
-        return DependencyNodeMetadata(
-            dependencies, dependency_position, args, bean_for, is_factory
-        )
+    def build(self, application_context):
+        if self.instance is not None:
+            return self.instance
+        self.instance = self.builder.build(application_context)
+        return self.instance
 
 
 class DependencyResolver:
@@ -221,27 +165,24 @@ class DependencyResolver:
             raise DependencyCycleException(stack, node)
         for child in node.dependencies:
             self._process(child, stack)
-        self.build(node)
+        self.generate_builder(node)
         stack.pop()
 
-    def build(self, node: DependencyNode):
+    def generate_builder(self, node: DependencyNode):
         metadata: DependencyNodeMetadata = self.node_metadata_registry[node.cls]
-        args: list = metadata.args
-        dependency_positions = metadata.dependency_position
-        for dep in metadata.dependencies:
-            args[dependency_positions[dep]] = self.objects[dep]
 
         if metadata.is_factory:
-            factory: BeanFactory = node.cls(*metadata.args)
-            obj = factory.produce()
-            clazz = obj.__class__
+            clazz = metadata.bean_for
         else:
-            obj = node.cls(*metadata.args)
             clazz = node.cls
 
-        self.objects[clazz] = obj
+        node_builder = NodeBuilder(node, metadata)
+        if metadata.is_singleton:
+            node_builder = SingletonNodeBuilder(node_builder)
+
+        self.objects[clazz] = node_builder.build
         if metadata.bean_for is not None and (
             metadata.is_factory
             or node.cls == self.bean_interface_map[metadata.bean_for]
         ):
-            self.objects[metadata.bean_for] = obj
+            self.objects[metadata.bean_for] = node_builder.build

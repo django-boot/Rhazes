@@ -71,11 +71,11 @@ from somepackage import UserStorage, DatabaseUserStorage, CacheUserStorage,  Pro
 application_context = ApplicationContext()
 application_context.initialize()
 
-product_manager: ProductManager = application_context.beans.get_bean(ProductManager)
-user_storage: UserStorage = application_context.beans.get_bean(UserStorage)  # this will be CacheUserStorage implementation since primary was set to true
+product_manager: ProductManager = application_context.get_bean(ProductManager)
+user_storage: UserStorage = application_context.get_bean(UserStorage)  # this will be CacheUserStorage implementation since primary was set to true
 
-cache_user_storage: CacheUserStorage = application_context.beans.get_bean(CacheUserStorage)  # to directly get CacheUserStorage
-database_user_storage: DatabaseUserStorage = application_context.beans.get_bean(DatabaseUserStorage)  # to directly get DatabaseUserStorage
+cache_user_storage: CacheUserStorage = application_context.get_bean(CacheUserStorage)  # to directly get CacheUserStorage
+database_user_storage: DatabaseUserStorage = application_context.get_bean(DatabaseUserStorage)  # to directly get DatabaseUserStorage
 
 ```
 
