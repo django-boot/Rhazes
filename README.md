@@ -1,5 +1,9 @@
 # Rhazes
 
+
+[![PyPI - Version](https://img.shields.io/pypi/v/django-boot-rhazes?style=flat-square)](https://pypi.org/project/django-boot-rhazes)
+[![GitHub Workflow Status (with event)](https://img.shields.io/github/actions/workflow/status/django-boot/Rhazes/project-code-standards.yml?style=flat-square)](https://github.com/django-boot/Rhazes/actions/workflows/project-code-standards.yml)
+[![GitHub issues](https://img.shields.io/github/issues/django-boot/Rhazes?style=flat-square)](https://github.com/django-boot/Rhazes/issues)
 ![Static Badge](https://img.shields.io/badge/Status-Under%20Development-yellow?style=flat-square&cacheSeconds=120)
 
 
@@ -8,7 +12,11 @@ A _Dependency Injection_ framework for Django Framework.
 
 ## Versions and Requirements
 
-_There is no published version yet_. Written for Django 4.2 using python 3.9. Other python versions (3.6+) should be supported. It may work with other Django versions as well (after required changes being applied to `setup.cfg`.
+Written for Django 4.2 using python 3.9. _Other python versions (3.6+) should also be supported. It may work with other Django versions as well (but requires changes being applied to `setup.cfg`)._
+
+
+
+
 
 ## How it works
 
