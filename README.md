@@ -7,14 +7,12 @@
 ![Static Badge](https://img.shields.io/badge/Status-Under%20Development-yellow?style=flat-square&cacheSeconds=120)
 
 
-A _Dependency Injection_ framework for Django Framework.
+A _Dependency Injection and IoC container_ library for Django Framework.
 
 
 ## Versions and Requirements
 
 Written for Django 4.2 using python 3.9. _Other python versions (3.6+) should also be supported. It may work with other Django versions as well (but requires changes being applied to `setup.cfg`)._
-
-
 
 
 
