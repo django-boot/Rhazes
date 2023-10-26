@@ -270,6 +270,30 @@ class ServiceB:
     pass
 ```
 
+
+### Override beans for tests
+
+In case you need to override a bean class in a test case method you can use one of the following ways:
+
+```python
+from rhazes.test.context import TemporaryContext, TemporaryContextManager
+
+# Way 1: using TemporaryContext
+temporary_context = TemporaryContext()
+mock = Mock()
+temporary_context.register_bean(SomeInterface, mock)
+# your other code here
+# Call this in the end:
+temporary_context.reset()
+
+
+# Way 2
+with TemporaryContextManager() as temporary_context:
+    mock = Mock()
+    temporary_context.register_bean(SomeInterface, mock)
+    # your other tests here
+```
+
 ## Contribution
 
 Read the [contribution guidelines](https://github.com/django-boot/Rhazes/blob/main/CONTRIBUTING.md).

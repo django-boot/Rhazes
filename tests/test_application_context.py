@@ -2,7 +2,8 @@ from django.test import TestCase, override_settings
 from django.utils.functional import SimpleLazyObject
 
 from rhazes.context import ApplicationContext
-from tests.data.di.context.di_context import SomeABC, DepAI1, DepB, DepC, DepD, DepE
+from rhazes.test.context import TemporaryContext, TemporaryContextManager
+from tests.data.di.context.di_context import SomeABC, DepAI1, DepAI2, DepB, DepC, DepD, DepE
 from tests.data.di.factory.di_factory import SomeInterface, TestStringGeneratorBean
 
 
@@ -51,3 +52,28 @@ class ApplicationContextTestCase(TestCase):
         self.assertIsNotNone(test_string_generator)
         si: SomeInterface = self.application_context.get_bean(SomeInterface)
         self.assertEqual(si.name(), test_string_generator.get_string())
+
+
+@override_settings(RHAZES_PACKAGES=["tests.data.di.context", "tests.data.di.factory"])
+class TemporaryContextTestCase(TestCase):
+
+    def setUp(self) -> None:
+        self.application_context = ApplicationContext
+        self.application_context.initialize()
+
+    def test_temporary_context(self):
+        self.assertTrue(isinstance(self.application_context.get_bean(SomeABC), DepAI1))
+        temporary_context = TemporaryContext()
+        temporary_context.register_bean(SomeABC, DepAI2(self.application_context.get_bean(DepB)))
+        self.assertTrue(isinstance(self.application_context.get_bean(SomeABC), DepAI2))
+        temporary_context.reset()
+        self.assertTrue(isinstance(self.application_context.get_bean(SomeABC), DepAI1))
+
+    def test_temporary_context_manager(self):
+        self.assertTrue(isinstance(self.application_context.get_bean(SomeABC), DepAI1))
+
+        with TemporaryContextManager() as manager:
+            manager.register_bean(SomeABC, DepAI2(self.application_context.get_bean(DepB)))
+            self.assertTrue(isinstance(self.application_context.get_bean(SomeABC), DepAI2))
+
+        self.assertTrue(isinstance(self.application_context.get_bean(SomeABC), DepAI1))
