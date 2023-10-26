@@ -16,6 +16,7 @@ class TestStringGeneratorBean:
         return "test"
 
 
+@bean()
 class SomeInterfaceFactory(BeanFactory):
     def __init__(self, tsg: TestStringGeneratorBean):
         self.tsg = tsg

@@ -3,7 +3,7 @@ from typing import Optional
 from django.utils.functional import SimpleLazyObject
 
 from rhazes.dependency import DependencyResolver
-from rhazes.protocol import BeanProtocol, BeanFactory
+from rhazes.protocol import BeanProtocol
 from rhazes.scanner import ModuleScanner, class_scanner
 
 
@@ -14,17 +14,14 @@ class ApplicationContext:
     @classmethod
     def _initialize_beans(cls):
         beans = set()
-        bean_factories = set()
         modules = ModuleScanner().scan()
         for module in modules:
             scanned_classes = class_scanner(module)
             for scanned_class in scanned_classes:
                 if issubclass(scanned_class, (BeanProtocol,)):
                     beans.add(scanned_class)
-                elif issubclass(scanned_class, (BeanFactory,)):
-                    bean_factories.add(scanned_class)
 
-        for clazz, obj in DependencyResolver(beans, bean_factories).resolve().items():
+        for clazz, obj in DependencyResolver(beans).resolve().items():
             cls.register_bean(clazz, obj)
 
     @classmethod

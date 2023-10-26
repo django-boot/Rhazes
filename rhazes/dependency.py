@@ -48,16 +48,9 @@ class SingletonNodeBuilder:
 
 
 class DependencyResolver:
-    def __init__(
-        self,
-        bean_classes: Set[Type[BeanProtocol]] = None,
-        bean_factories: Set[Type[BeanFactory]] = None,
-    ):
+    def __init__(self, bean_classes: Set[Type[BeanProtocol]] = None):
         self.bean_classes: Set[Type[BeanProtocol]] = (
             bean_classes if bean_classes is not None else set()
-        )
-        self.bean_factories: Set[Type[BeanFactory]] = (
-            bean_factories if bean_factories is not None else set()
         )
         self.bean_interface_map = {}
         self.fill_bean_interface_map()
@@ -124,13 +117,10 @@ class DependencyResolver:
         :returns dictionary of created objects for each class
         """
 
-        to_graphize = set()
-        to_graphize.update(self.bean_classes)
-        to_graphize.update(self.bean_factories)
         to_process = []
 
         # Building Graph
-        for cls in to_graphize:
+        for cls in self.bean_classes:
             metadata = self.register_metadata(cls)
             node = self.register_dependency_node(cls)
             for dependency in metadata.dependencies:
