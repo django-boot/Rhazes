@@ -7,29 +7,28 @@
 ![Static Badge](https://img.shields.io/badge/Status-Under%20Development-yellow?style=flat-square&cacheSeconds=120)
 
 
-A _Dependency Injection_ framework for Django Framework.
+A _Dependency Injection and IoC container_ library for Django Framework.
 
 
 ## Versions and Requirements
 
-Written for Django 4.2 using python 3.9. _Other python versions (3.6+) should also be supported. It may work with other Django versions as well (but requires changes being applied to `setup.cfg`)._
+Written for Django 4.2 using python 3.9.
 
-
-
+_Other python versions (3.6+) should also be supported. It may work with other Django versions as well (but requires changes being applied to `setup.cfg`)._
 
 
 ## How it works
 
-Once Rhazes `ApplicationContext` is initialized it will scan for classes marked with `@bean` decorator under packages listed in `settings.INSTALLED_APPS` or `settings.RHAZES_PACKAGES` (preferably).
+Rhazes works by _scanning_ for bean (AKA services) classes available in the project. Ideally to make the scan faster, you shall define the packages you want to scan in a configuration inside settings.py (explained in usage section).
 
-Afterwards, it creates a graph of these classes and their dependencies to each other and starts to create objects for each class and register them as beans under `ApplicationContext`.
+Scanning for bean classes works by creating graphs of bean classes and their dependencies and choose random nodes to do DFS traversal in order to find edges and possible dependency cycles. Then from edges back to to top, there will be `builder` functions created and registered in `ApplicationContext` (which is a static class or a singleton) for a specific bean class or interface. A builder is a function that accepts `ApplicationContext` and returns an instance of a bean class (possibly singleton instance). The builder can use `ApplicationContext` to access other dependent beans, and this is only possible since we cover dependency graph edges first and then go up in the graph.
 
-If everything works perfectly, you can access the beans using `ApplicationContext.get_bean(CLASS)` to get beans of a type.
+Eventually, all bean classes will have a builder registered in `ApplicationContext`. You can directly ask `ApplicationContext` for a bean instance of specific type, or you can use `@inject` decorator so they are automatically injected into your classes/functions.
 
 
-## Example
+## Usage and Example
 
-Let's assume we have bean classes like below:
+Let's assume we have bean classes like below in a package named `app1.services`:
 
 ```python
 from abc import ABC, abstractmethod
@@ -69,6 +68,14 @@ class ProductManager:
 
 ```
 
+To make Rhazes scan these packages, we should define `RHAZES_PACKAGES` in our `settings.py`:
+
+```python
+RHAZES_PACKAGES = [
+  "app1.services"
+]
+```
+
 Now assuming you have the above classes defined user some packages that will be scanned by Rhazes, you can access them like this:
 
 ```python
@@ -91,6 +98,19 @@ user_storage: UserStorage = application_context.get_bean(UserStorage)
 cache_user_storage: CacheUserStorage = application_context.get_bean(CacheUserStorage)  # to directly get CacheUserStorage
 database_user_storage: DatabaseUserStorage = application_context.get_bean(DatabaseUserStorage)  # to directly get DatabaseUserStorage
 ```
+
+**Important note**: in order for Rhazes to understand the dependency of the beans and be able to graph it **you have to use type hints**.
+
+This means that Rhazes fails to understand the type of dependency (`service_a`) of such bean:
+
+```python
+@bean
+class ServiceB:
+  def __init__(self, service_a):  # Rhazes can't guess what should be injected here
+    pass
+```
+
+As a general rule, use type hints anywhere you expect Rhazes to do something for you!
 
 
 ### Bean factory
@@ -228,6 +248,27 @@ class NameGeneratorView(APIView):
 ```
 
 This example is taken [from here](https://github.com/django-boot/Rhazes-Test/blob/main/app1/views.py).
+
+### When to initialize `ApplicationContext`
+
+Application Context can be initialized either in a `.ready()` method of an app in your Django project, or in main `urls.py`.
+
+### Dependency Cycles
+
+Dependency cycles are detected during Application Context initialization and will raise error. So you cant have beans like below:
+
+```python
+@bean
+class ServiceA:
+  def __init__(self, service_b: "ServiceB"):
+    pass
+
+
+@bean
+class ServiceB:
+  def __init__(self, service_a: "ServiceA"):
+    pass
+```
 
 ## Contribution
 
