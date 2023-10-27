@@ -2,7 +2,6 @@ from rhazes.context import ApplicationContext
 
 
 class TemporaryContext:
-
     def __init__(self):
         self.old_values = {}
 
@@ -18,7 +17,6 @@ class TemporaryContext:
 
 
 class TemporaryContextManager:
-
     def __init__(self):
         self.temporary_context = TemporaryContext()
 

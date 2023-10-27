@@ -3,7 +3,15 @@ from django.utils.functional import SimpleLazyObject
 
 from rhazes.context import ApplicationContext
 from rhazes.test.context import TemporaryContext, TemporaryContextManager
-from tests.data.di.context.di_context import SomeABC, DepAI1, DepAI2, DepB, DepC, DepD, DepE
+from tests.data.di.context.di_context import (
+    SomeABC,
+    DepAI1,
+    DepAI2,
+    DepB,
+    DepC,
+    DepD,
+    DepE,
+)
 from tests.data.di.factory.di_factory import SomeInterface, TestStringGeneratorBean
 
 
@@ -56,7 +64,6 @@ class ApplicationContextTestCase(TestCase):
 
 @override_settings(RHAZES_PACKAGES=["tests.data.di.context", "tests.data.di.factory"])
 class TemporaryContextTestCase(TestCase):
-
     def setUp(self) -> None:
         self.application_context = ApplicationContext
         self.application_context.initialize()
@@ -64,7 +71,9 @@ class TemporaryContextTestCase(TestCase):
     def test_temporary_context(self):
         self.assertTrue(isinstance(self.application_context.get_bean(SomeABC), DepAI1))
         temporary_context = TemporaryContext()
-        temporary_context.register_bean(SomeABC, DepAI2(self.application_context.get_bean(DepB)))
+        temporary_context.register_bean(
+            SomeABC, DepAI2(self.application_context.get_bean(DepB))
+        )
         self.assertTrue(isinstance(self.application_context.get_bean(SomeABC), DepAI2))
         temporary_context.reset()
         self.assertTrue(isinstance(self.application_context.get_bean(SomeABC), DepAI1))
@@ -73,7 +82,11 @@ class TemporaryContextTestCase(TestCase):
         self.assertTrue(isinstance(self.application_context.get_bean(SomeABC), DepAI1))
 
         with TemporaryContextManager() as manager:
-            manager.register_bean(SomeABC, DepAI2(self.application_context.get_bean(DepB)))
-            self.assertTrue(isinstance(self.application_context.get_bean(SomeABC), DepAI2))
+            manager.register_bean(
+                SomeABC, DepAI2(self.application_context.get_bean(DepB))
+            )
+            self.assertTrue(
+                isinstance(self.application_context.get_bean(SomeABC), DepAI2)
+            )
 
         self.assertTrue(isinstance(self.application_context.get_bean(SomeABC), DepAI1))
