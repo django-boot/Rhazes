@@ -1,5 +1,6 @@
-from typing import Optional
+from typing import Optional, List
 
+from django.conf import settings
 from django.utils.functional import SimpleLazyObject
 
 from rhazes.dependency import DependencyResolver
@@ -10,11 +11,17 @@ from rhazes.scanner import ModuleScanner, class_scanner
 class ApplicationContext:
     _initialized = False
     _builder_registry = {}
+    _additional_roots_to_scan = []
+
+    @classmethod
+    def get_roots_to_scan(cls):
+        roots_to_scan = cls._roots_to_scan()
+        return cls._additional_roots_to_scan + roots_to_scan
 
     @classmethod
     def _initialize_beans(cls):
         beans = set()
-        modules = ModuleScanner().scan()
+        modules = ModuleScanner(cls.get_roots_to_scan()).scan()
         for module in modules:
             scanned_classes = class_scanner(module)
             for scanned_class in scanned_classes:
@@ -25,7 +32,16 @@ class ApplicationContext:
             cls.register_bean(clazz, obj)
 
     @classmethod
-    def initialize(cls):
+    def _roots_to_scan(cls):
+        if hasattr(settings, "RHAZES_PACKAGES"):
+            return settings.RHAZES_PACKAGES
+        return settings.INSTALLED_APPS
+
+    @classmethod
+    def initialize(cls, additional_roots_to_scan: List[str] = None):
+        if additional_roots_to_scan is not None:
+            cls._additional_roots_to_scan = additional_roots_to_scan
+
         if cls._initialized:
             return
         cls._initialize_beans()

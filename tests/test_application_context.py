@@ -15,11 +15,11 @@ from tests.data.di.context.di_context import (
 from tests.data.di.factory.di_factory import SomeInterface, TestStringGeneratorBean
 
 
-@override_settings(RHAZES_PACKAGES=["tests.data.di.context", "tests.data.di.factory"])
+@override_settings(RHAZES_PACKAGES=["tests.data.di.context"])
 class ApplicationContextTestCase(TestCase):
     def setUp(self) -> None:
         self.application_context = ApplicationContext
-        self.application_context.initialize()
+        self.application_context.initialize(["tests.data.di.factory"])
 
     def test_bean_context(self):
         """

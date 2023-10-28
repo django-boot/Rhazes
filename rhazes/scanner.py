@@ -2,8 +2,6 @@ import importlib
 import inspect
 from typing import Optional, List, Set
 
-from django.conf import settings
-
 
 def class_scanner(module: str):
     result = []
@@ -18,16 +16,8 @@ class ModuleScanner:
     Scans for python packages submodules recursively
     """
 
-    def __init__(self, roots_to_scan: Optional[List[str]] = None):
-        self.roots_to_scan = (
-            roots_to_scan if roots_to_scan is not None else self._roots_to_scan()
-        )
-
-    @classmethod
-    def _roots_to_scan(cls):
-        if hasattr(settings, "RHAZES_PACKAGES"):
-            return settings.RHAZES_PACKAGES
-        return settings.INSTALLED_APPS
+    def __init__(self, roots_to_scan: List[str]):
+        self.roots_to_scan = roots_to_scan
 
     def _list_submodules(self, module) -> list[str]:
         """
