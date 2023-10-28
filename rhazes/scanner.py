@@ -1,6 +1,6 @@
 import importlib
 import inspect
-from typing import Optional, List, Set
+from typing import List, Set
 
 
 def class_scanner(module: str):
