@@ -1,8 +1,9 @@
-from django.test import TestCase, override_settings
-from django.utils.functional import SimpleLazyObject
+from unittest import TestCase
 
 from rhazes.context import ApplicationContext
 from rhazes.test.context import TemporaryContext, TemporaryContextManager
+from rhazes.utils import LazyObject
+
 from tests.data.di.context.di_context import (
     SomeABC,
     DepAI1,
@@ -15,11 +16,12 @@ from tests.data.di.context.di_context import (
 from tests.data.di.factory.di_factory import SomeInterface, TestStringGeneratorBean
 
 
-@override_settings(RHAZES_PACKAGES=["tests.data.di.context"])
 class ApplicationContextTestCase(TestCase):
     def setUp(self) -> None:
         self.application_context = ApplicationContext
-        self.application_context.initialize(["tests.data.di.factory"])
+        self.application_context.initialize(
+            ["tests.data.di.context", "tests.data.di.factory"]
+        )
 
     def test_bean_context(self):
         """
@@ -41,7 +43,7 @@ class ApplicationContextTestCase(TestCase):
     def test_lazy_dependencies(self):
         dep_e: DepE = self.application_context.get_bean(DepE)
         dep_d: DepD = self.application_context.get_bean(DepD)
-        self.assertTrue(isinstance(dep_e.dep_d, SimpleLazyObject))
+        self.assertTrue(isinstance(dep_e.dep_d, LazyObject))
         self.assertTrue(isinstance(dep_e, DepE))
         self.assertEqual(dep_e.dep_d.name(), dep_d.name())
 
@@ -62,11 +64,12 @@ class ApplicationContextTestCase(TestCase):
         self.assertEqual(si.name(), test_string_generator.get_string())
 
 
-@override_settings(RHAZES_PACKAGES=["tests.data.di.context", "tests.data.di.factory"])
 class TemporaryContextTestCase(TestCase):
     def setUp(self) -> None:
         self.application_context = ApplicationContext
-        self.application_context.initialize()
+        self.application_context.initialize(
+            ["tests.data.di.context", "tests.data.di.factory"]
+        )
 
     def test_temporary_context(self):
         self.assertTrue(isinstance(self.application_context.get_bean(SomeABC), DepAI1))

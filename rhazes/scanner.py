@@ -3,10 +3,10 @@ import inspect
 from typing import List, Set
 
 
-def class_scanner(module: str):
+def class_scanner(module: str, selector=lambda x: True):
     result = []
     for _, cls in inspect.getmembers(importlib.import_module(module), inspect.isclass):
-        if cls.__module__ == module:
+        if cls.__module__ == module and selector(cls):
             result.append(cls)
     return result
 

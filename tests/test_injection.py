@@ -1,15 +1,16 @@
-from django.test import TestCase, override_settings
+from unittest import TestCase
 
 from rhazes.context import ApplicationContext
 from rhazes.decorator import inject
 from tests.data.di.context.di_context import DepD, DepE
 
 
-@override_settings(RHAZES_PACKAGES=["tests.data.di.context", "tests.data.di.factory"])
 class InjectionTestCase(TestCase):
     def setUp(self) -> None:
         self.application_context = ApplicationContext
-        self.application_context.initialize()
+        self.application_context.initialize(
+            ["tests.data.di.context", "tests.data.di.factory"]
+        )
         self.dep_d: DepD = self.application_context.get_bean(DepD)
         self.assertIsNotNone(self.dep_d)
 

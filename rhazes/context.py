@@ -1,50 +1,37 @@
 from typing import Optional, List
 
-from django.conf import settings
-from django.utils.functional import SimpleLazyObject
 
 from rhazes.dependency import DependencyResolver
 from rhazes.protocol import BeanProtocol
 from rhazes.scanner import ModuleScanner, class_scanner
+from rhazes.utils import LazyObject
 
 
 class ApplicationContext:
     _initialized = False
     _builder_registry = {}
-    _additional_roots_to_scan = []
 
     @classmethod
-    def get_roots_to_scan(cls):
-        roots_to_scan = cls._roots_to_scan()
-        return cls._additional_roots_to_scan + roots_to_scan
-
-    @classmethod
-    def _initialize_beans(cls):
+    def _initialize_beans(cls, packages_to_scan: List[str]):
         beans = set()
-        modules = ModuleScanner(cls.get_roots_to_scan()).scan()
+        modules = ModuleScanner(packages_to_scan).scan()
         for module in modules:
-            scanned_classes = class_scanner(module)
-            for scanned_class in scanned_classes:
-                if issubclass(scanned_class, (BeanProtocol,)):
-                    beans.add(scanned_class)
+            for bean in class_scanner(
+                module, lambda clz: issubclass(clz, (BeanProtocol,))
+            ):
+                beans.add(bean)
 
         for clazz, obj in DependencyResolver(beans).resolve().items():
             cls.register_bean(clazz, obj)
 
     @classmethod
-    def _roots_to_scan(cls):
-        if hasattr(settings, "RHAZES_PACKAGES"):
-            return settings.RHAZES_PACKAGES
-        return settings.INSTALLED_APPS
-
-    @classmethod
-    def initialize(cls, additional_roots_to_scan: List[str] = None):
-        if additional_roots_to_scan is not None:
-            cls._additional_roots_to_scan = additional_roots_to_scan
+    def initialize(cls, packages_to_scan: List[str]):
+        if packages_to_scan is not None:
+            cls.packages_to_scan = packages_to_scan
 
         if cls._initialized:
             return
-        cls._initialize_beans()
+        cls._initialize_beans(packages_to_scan)
         cls._initialized = True
 
     @classmethod
@@ -61,4 +48,4 @@ class ApplicationContext:
 
     @classmethod
     def get_lazy_bean(cls, of: type) -> Optional:
-        return SimpleLazyObject(lambda: cls.get_bean(of))
+        return LazyObject(lambda: cls.get_bean(of))

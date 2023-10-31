@@ -1,4 +1,4 @@
-from django.test import TestCase
+from unittest import TestCase
 
 from rhazes.dependency import DependencyResolver
 from rhazes.exceptions import DependencyCycleException, MissingDependencyException

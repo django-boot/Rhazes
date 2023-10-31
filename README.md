@@ -7,28 +7,28 @@
 ![Static Badge](https://img.shields.io/badge/Status-Under%20Development-yellow?style=flat-square&cacheSeconds=120)
 
 
-A _Dependency Injection and IoC container_ library for Django Framework.
+A _Dependency Injection and IoC container_ library for Python.
 
+_This library was initially written only for Django framework, only to realize it does nothing Django specific!_
+_For Django, check [Django Boot Core Starter](https://github.com/django-boot/django-boot-core-starter)._
 
 ## Versions and Requirements
 
-Written for Django 4.2 using python 3.9.
-
-_Other python versions (3.6+) should also be supported. It may work with other Django versions as well (but requires changes being applied to `setup.cfg`)._
+Written and tested using python 3.9, should work on 3.6+.
 
 
 ## How it works
 
 Rhazes works by _scanning_ for bean (AKA services) classes available in the project. Ideally to make the scan faster, you shall define the packages you want to scan in a configuration inside settings.py (explained in usage section).
 
-Scanning for bean classes works by creating graphs of bean classes and their dependencies and choose random nodes to do DFS traversal in order to find edges and possible dependency cycles. Then from edges back to to top, there will be `builder` functions created and registered in `ApplicationContext` (which is a static class or a singleton) for a specific bean class or interface. A builder is a function that accepts `ApplicationContext` and returns an instance of a bean class (possibly singleton instance). The builder can use `ApplicationContext` to access other dependent beans, and this is only possible since we cover dependency graph edges first and then go up in the graph.
+Scanning for bean classes works by creating graphs of bean classes and their dependencies and choose random nodes to do DFS traversal in order to find edges and possible dependency cycles. Then from edges back to the top, there will be `builder` functions created and registered in `ApplicationContext` (which is a static class or a singleton) for a specific bean class or interface. A builder is a function that accepts `ApplicationContext` and returns an instance of a bean class (possibly singleton instance). The builder can use `ApplicationContext` to access other dependent beans, and this is only possible since we cover dependency graph edges first and then go up in the graph.
 
-Eventually, all bean classes will have a builder registered in `ApplicationContext`. You can directly ask `ApplicationContext` for a bean instance of specific type, or you can use `@inject` decorator so they are automatically injected into your classes/functions.
+Eventually, all bean classes will have a builder registered in `ApplicationContext`. You can directly ask `ApplicationContext` for a bean instance of specific type, or you can use `@inject` decorator, so they are automatically injected into your classes/functions.
 
 
 ## Usage and Example
 
-Let's assume we have bean classes like below in a package named `app1.services`:
+Let's assume we have `bean` classes like below in a package named `app1.services`:
 
 ```python
 from abc import ABC, abstractmethod
@@ -68,13 +68,6 @@ class ProductManager:
 
 ```
 
-To make Rhazes scan these packages, we should define `RHAZES_PACKAGES` in our `settings.py`:
-
-```python
-RHAZES_PACKAGES = [
-  "app1.services"
-]
-```
 
 Now assuming you have the above classes defined user some packages that will be scanned by Rhazes, you can access them like this:
 
@@ -84,8 +77,10 @@ from somepackage import UserStorage, DatabaseUserStorage, CacheUserStorage,  Pro
 
 
 application_context = ApplicationContext
-# scan packages at settings.INSTALLED_APPS or settings.RHAZES_PACKAGES
-application_context.initialize()
+# scan packages and initialize beans
+application_context.initialize([
+  "app1.services"
+])
 
 # Get ProductManager bean using its class
 product_manager: ProductManager = application_context.get_bean(ProductManager)
@@ -225,33 +220,12 @@ def function(bean1: SomeBean1, bean2: SomeBean2, random_input: str):
 function(bean2=SomeBean2(), random_input="something")  # `bean1` will be injected automatically
 ```
 
-
-### Inject into Django views
-
-At this stage only injection into class views are tested. Example:
-
-```python
-@inject()
-class NameGeneratorView(APIView):
-    # You could optionally use @inject() here or at .setup()
-    def __init__(self, string_generator: StringGeneratorService, **kwargs):
-        self.string_generator = string_generator
-        super(NameGeneratorView, self).__init__(**kwargs)
-
-    def get(self, request, *args, **kwargs):
-        qs: dict = request.GET.dict()
-        return Response(data={
-            "name": self.string_generator.generate(
-                int(qs.get("length", 10))
-            )
-        })
-```
-
-This example is taken [from here](https://github.com/django-boot/Rhazes-Test/blob/main/app1/views.py).
-
 ### When to initialize `ApplicationContext`
 
-Application Context can be initialized either in a `.ready()` method of an app in your Django project, or in main `urls.py`.
+It really depends on what sort of application you are writing.
+
+
+For example in Django, Application Context can be initialized either in a `.ready()` method of an app in your Django project, or in main `urls.py`.
 
 ### Dependency Cycles
 
