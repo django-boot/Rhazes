@@ -19,13 +19,12 @@ def bean(
                 f"but its not a subclass of that interface"
             )
 
-        @functools.wraps(cls, updated=())
-        class DecoratedBean(cls):
-            @classmethod
-            def bean_details(cls) -> BeanDetails:
-                return BeanDetails(_for, primary, singleton, lazy_dependencies)
+        def bean_details(cls) -> BeanDetails:
+            return BeanDetails(_for, primary, singleton, lazy_dependencies)
 
-        return DecoratedBean
+        setattr(cls, "bean_details", classmethod(bean_details))
+
+        return cls
 
     return decorator
 
