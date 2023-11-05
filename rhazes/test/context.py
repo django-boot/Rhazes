@@ -9,11 +9,11 @@ class TemporaryContext:
         old_value = ApplicationContext.get_bean(clazz)
         if clazz not in self.old_values:
             self.old_values[clazz] = old_value
-        ApplicationContext.register_bean(clazz, lambda x: obj, True)
+        ApplicationContext.register_bean(clazz, lambda: obj, True)
 
     def reset(self):
         for clazz, old_value in self.old_values.items():
-            ApplicationContext.register_bean(clazz, lambda x: old_value, True)
+            ApplicationContext.register_bean(clazz, lambda: old_value, True)
 
 
 class TemporaryContextManager:

@@ -3,13 +3,14 @@ import inspect
 from typing import Optional, Dict, Type, List, Union
 
 from rhazes.context import ApplicationContext
-from rhazes.protocol import InjectionConfiguration, BeanDetails
+from rhazes.bean_builder import DefaultBeanBuilderStrategy
+from rhazes.protocol import InjectionConfiguration, BeanDetails, BeanBuilderStrategy
 
 
 def bean(
     _for=None,
     primary=False,
-    singleton=False,
+    scope: Type[BeanBuilderStrategy] = DefaultBeanBuilderStrategy,
     lazy_dependencies: Optional[List[Union[type, str]]] = None,
 ):
     def decorator(cls):
@@ -20,7 +21,7 @@ def bean(
             )
 
         def bean_details(cls) -> BeanDetails:
-            return BeanDetails(_for, primary, singleton, lazy_dependencies)
+            return BeanDetails(_for, scope, primary, lazy_dependencies)
 
         setattr(cls, "bean_details", classmethod(bean_details))
 

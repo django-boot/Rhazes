@@ -1,6 +1,7 @@
 from abc import ABC
 
 from rhazes.decorator import bean
+from rhazes.scope import Scope
 
 
 class SomeABC:
@@ -30,7 +31,7 @@ class DepB:
         self.dep_d = dep_d
 
 
-@bean(_for=DepCInterface, primary=True, singleton=True)
+@bean(_for=DepCInterface, primary=True, scope=Scope.SINGLETON)
 class DepC(DepCInterface):
     pass
 
