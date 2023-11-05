@@ -12,7 +12,6 @@ from typing import (
     Type,
     TypedDict,
     List,
-    Callable,
 )
 
 from rhazes.exceptions import MissingDependencyException
@@ -168,5 +167,5 @@ class BeanBuilderStrategy(ABC):
         self.metadata = metadata
 
     @abstractmethod
-    def execute(self) -> Callable:
+    def execute(self) -> object:
         pass

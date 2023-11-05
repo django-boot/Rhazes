@@ -1,5 +1,3 @@
-from typing import Callable
-
 from rhazes.context import ApplicationContext
 from rhazes.protocol import (
     BeanBuilderStrategy,
@@ -11,7 +9,7 @@ from rhazes.utils import synchronized
 
 
 class DefaultBeanBuilderStrategy(BeanBuilderStrategy):
-    def execute(self) -> Callable:
+    def execute(self) -> object:
         args: list = self.metadata.args
         dependency_positions = self.metadata.dependency_position
         for dep in self.metadata.dependencies:
@@ -37,7 +35,7 @@ class SingletonBeanBuilderStrategy(DefaultBeanBuilderStrategy):
         self.instance = None
 
     @synchronized
-    def execute(self) -> Callable:
+    def execute(self) -> object:
         if self.instance is None:
             self.instance = super(SingletonBeanBuilderStrategy, self).execute()
         return self.instance
