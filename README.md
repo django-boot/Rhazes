@@ -134,7 +134,9 @@ class SomeBeanFactory(BeanFactory):
 You can define beans as singleton.
 
 ```python
-@bean(singleton=True)
+from rhazes.scope import Scope
+
+@bean(scope=Scope.SINGLETON)
 class SomeBean:
     pass
 ```
@@ -266,6 +268,35 @@ with TemporaryContextManager() as temporary_context:
     mock = Mock()
     temporary_context.register_bean(SomeInterface, mock)
     # your other tests here
+```
+
+
+### Custom bean builder
+
+In case you need to override or introduce new bean builders (example, adding a bean builder that creates a new bean per each thread but uses same reference of a bean per each thread) you can do it by implementing `BeanBuilderStrategy` class.
+
+```python
+from rhazes.protocol import BeanBuilderStrategy
+
+class CustomBeanBuilderStrategy(BeanBuilderStrategy):
+
+    def execute(self) -> object:
+        pass  # Your implementation here
+
+```
+
+- You can use `self.node` to see which `Node` is being implemented: [DependencyNode class reference](https://github.com/django-boot/rhazes/blob/main/rhazes/protocol.py#L148-L157)
+- You can use `self.metadata` to see metadata information of the node (bean): [DependencyNodeMetadata class reference](https://github.com/django-boot/rhazes/blob/main/rhazes/protocol.py#L57C7-L70)
+
+The default implementation is `DefaultBeanBuilderStrategy` available at `rhazes.bean_builder.DefaultBeanBuilderStrategy`.
+
+
+Eventually the new strategy class can be used in the bean:
+
+```python
+@bean(scope=CustomBeanBuilderStrategy)
+class SomeBean:
+    pass
 ```
 
 ## Contribution

@@ -22,8 +22,8 @@ logger = logging.getLogger(__name__)
 @dataclass(unsafe_hash=True)
 class BeanDetails:
     bean_for: Optional[type]
+    scope: Type["BeanBuilderStrategy"]
     primary: bool = False
-    singleton: bool = False
     lazy_dependencies: Optional[List[type]] = None
 
 
@@ -64,9 +64,9 @@ class DependencyNodeMetadata:
     dependencies: Optional[list]
     dependency_position: Optional[dict]
     args: Optional[list]
+    builder_strategy: Type["BeanBuilderStrategy"]
     bean_for: Optional[Type] = None
     is_factory: bool = False
-    is_singleton: bool = False
     lazy_dependencies: Optional[list] = None
 
     @staticmethod
@@ -123,13 +123,13 @@ class DependencyNodeMetadata:
 
         bean_for = None
         is_factory = False
-        is_singleton = False
         lazy_dependencies = None
+        builder_strategy = None
 
         if issubclass(cls, (BeanProtocol,)):
             bean_for = cls.bean_details().bean_for
-            is_singleton = cls.bean_details().singleton
             lazy_dependencies = cls.bean_details().lazy_dependencies
+            builder_strategy = cls.bean_details().scope
         if issubclass(cls, (BeanFactory,)):
             bean_for = bean_for if bean_for is not None else cls.produces()
             is_factory = True
@@ -138,9 +138,9 @@ class DependencyNodeMetadata:
             dependencies,
             dependency_position,
             args,
+            builder_strategy,
             bean_for,
             is_factory,
-            is_singleton,
             lazy_dependencies,
         )
 
@@ -159,3 +159,13 @@ class DependencyNode:
 
 class InjectionConfiguration(TypedDict):
     lazy: bool
+
+
+class BeanBuilderStrategy(ABC):
+    def __init__(self, node: DependencyNode, metadata: DependencyNodeMetadata):
+        self.node = node
+        self.metadata = metadata
+
+    @abstractmethod
+    def execute(self) -> object:
+        pass

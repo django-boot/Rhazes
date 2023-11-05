@@ -4,47 +4,9 @@ from rhazes.collections.stack import UniqueStack
 from rhazes.exceptions import DependencyCycleException
 from rhazes.protocol import (
     BeanProtocol,
-    BeanFactory,
     DependencyNodeMetadata,
     DependencyNode,
 )
-
-
-class NodeBuilder:
-    def __init__(self, node: DependencyNode, metadata: DependencyNodeMetadata):
-        self.node = node
-        self.metadata = metadata
-
-    def build(self, application_context):
-        args: list = self.metadata.args
-        dependency_positions = self.metadata.dependency_position
-        for dep in self.metadata.dependencies:
-            lazy = (
-                self.metadata.lazy_dependencies is not None
-                and dep in self.metadata.lazy_dependencies
-            )
-            args[dependency_positions[dep]] = (
-                application_context.get_lazy_bean(dep)
-                if lazy
-                else application_context.get_bean(dep)
-            )
-        if self.metadata.is_factory:
-            factory: BeanFactory = self.node.cls(*self.metadata.args)
-            return factory.produce()
-        else:
-            return self.node.cls(*self.metadata.args)
-
-
-class SingletonNodeBuilder:
-    def __init__(self, builder: NodeBuilder):
-        self.builder = builder
-        self.instance = None
-
-    def build(self, application_context):
-        if self.instance is not None:
-            return self.instance
-        self.instance = self.builder.build(application_context)
-        return self.instance
 
 
 class DependencyResolver:
@@ -166,13 +128,11 @@ class DependencyResolver:
         else:
             clazz = node.cls
 
-        node_builder = NodeBuilder(node, metadata)
-        if metadata.is_singleton:
-            node_builder = SingletonNodeBuilder(node_builder)
+        node_builder = metadata.builder_strategy(node, metadata)
 
-        self.objects[clazz] = node_builder.build
+        self.objects[clazz] = node_builder.execute
         if metadata.bean_for is not None and (
             metadata.is_factory
             or node.cls == self.bean_interface_map[metadata.bean_for]
         ):
-            self.objects[metadata.bean_for] = node_builder.build
+            self.objects[metadata.bean_for] = node_builder.execute

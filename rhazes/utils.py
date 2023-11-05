@@ -1,8 +1,9 @@
+import functools
 import operator
+import threading
 
 
 class LazyObject:
-
     _wrapped = None
     _is_init = False
 
@@ -62,3 +63,14 @@ class LazyObject:
     __iter__ = new_method_proxy(iter)
     __len__ = new_method_proxy(len)
     __contains__ = new_method_proxy(operator.contains)
+
+
+def synchronized(wrapped):
+    lock = threading.Lock()
+
+    @functools.wraps(wrapped)
+    def _wrap(*args, **kwargs):
+        with lock:
+            return wrapped(*args, **kwargs)
+
+    return _wrap

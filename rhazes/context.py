@@ -1,6 +1,5 @@
 from typing import Optional, List
 
-
 from rhazes.dependency import DependencyResolver
 from rhazes.protocol import BeanProtocol
 from rhazes.scanner import ModuleScanner, class_scanner
@@ -44,7 +43,7 @@ class ApplicationContext:
         builder = cls._builder_registry.get(of)
         if builder is None:
             return None
-        return builder(cls)
+        return builder()
 
     @classmethod
     def get_lazy_bean(cls, of: type) -> Optional:
