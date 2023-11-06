@@ -99,7 +99,7 @@ database_user_storage: DatabaseUserStorage = application_context.get_bean(Databa
 This means that Rhazes fails to understand the type of dependency (`service_a`) of such bean:
 
 ```python
-@bean
+@bean()
 class ServiceB:
   def __init__(self, service_a):  # Rhazes can't guess what should be injected here
     pass
@@ -115,7 +115,7 @@ Bean factories are just classes that _produce_ a bean. They are beans themselves
 ```python
 from rhazes.protocol import BeanFactory
 
-@bean
+@bean()
 class SomeBeanFactory(BeanFactory):
 
     # optional: if you haven't defined "_for" in @bean, you can determine it here
@@ -150,7 +150,7 @@ If the bean you are defining is depended on another bean but you don't want to i
 
 ```python
 
-@bean
+@bean()
 class DependencyA:
     pass
 
@@ -172,7 +172,7 @@ These classes or functions need to be called with determined input parameter nam
 
 ```python
 
-@bean
+@bean()
 class SomeBean:
     pass
 
@@ -188,12 +188,12 @@ function(random_input="something")  # `bean` will be injected automatically
 Example for classes:
 
 ```python
-@bean
+@bean()
 class SomeBean:
     pass
 
 
-@inject
+@inject()
 class MyClazz:
     def __init__(self, bean: SomeBean, random_input: str):
         ...
@@ -204,12 +204,12 @@ MyClazz(random_input="something")  # `bean` will be injected automatically
 To explicitly inject some beans and not others:
 
 ```python
-@bean
+@bean()
 class SomeBean1:
     pass
 
 
-@bean
+@bean()
 class SomeBean2:
     pass
 
@@ -234,13 +234,13 @@ For example in Django, Application Context can be initialized either in a `.read
 Dependency cycles are detected during Application Context initialization and will raise error. So you cant have beans like below:
 
 ```python
-@bean
+@bean()
 class ServiceA:
   def __init__(self, service_b: "ServiceB"):
     pass
 
 
-@bean
+@bean()
 class ServiceB:
   def __init__(self, service_a: "ServiceA"):
     pass

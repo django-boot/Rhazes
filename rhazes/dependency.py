@@ -16,7 +16,7 @@ class DependencyResolver:
         )
         self.bean_interface_map = {}
         self.fill_bean_interface_map()
-        self.objects = {}
+        self.builders = {}
         self.node_registry = {}
         self.node_metadata_registry = {}
 
@@ -75,8 +75,8 @@ class DependencyResolver:
 
     def resolve(self) -> dict:
         """
-        Resolves dependencies by building graph, traverse it and returning list of created objects
-        :returns dictionary of created objects for each class
+        Resolves dependencies by building graph, traverse it and returning dictionary of class -> builder
+        :returns dictionary of class -> builder
         """
 
         to_process = []
@@ -93,7 +93,7 @@ class DependencyResolver:
         for node in to_process:
             self._process(node, UniqueStack())
 
-        return self.objects
+        return self.builders
 
     def _process(self, node, stack):
         """
@@ -109,7 +109,7 @@ class DependencyResolver:
         :param stack: instance of UniqueStack for dependency cycle detection
         :return:
         """
-        if node.cls in self.objects:
+        if node.cls in self.builders:
             return
         try:
             stack.append(node)
@@ -130,9 +130,9 @@ class DependencyResolver:
 
         node_builder = metadata.builder_strategy(node, metadata)
 
-        self.objects[clazz] = node_builder.execute
+        self.builders[clazz] = node_builder.execute
         if metadata.bean_for is not None and (
             metadata.is_factory
             or node.cls == self.bean_interface_map[metadata.bean_for]
         ):
-            self.objects[metadata.bean_for] = node_builder.execute
+            self.builders[metadata.bean_for] = node_builder.execute

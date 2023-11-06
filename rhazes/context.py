@@ -20,14 +20,11 @@ class ApplicationContext:
             ):
                 beans.add(bean)
 
-        for clazz, obj in DependencyResolver(beans).resolve().items():
-            cls.register_bean(clazz, obj)
+        for clazz, builder in DependencyResolver(beans).resolve().items():
+            cls.register_bean(clazz, builder)
 
     @classmethod
     def initialize(cls, packages_to_scan: List[str]):
-        if packages_to_scan is not None:
-            cls.packages_to_scan = packages_to_scan
-
         if cls._initialized:
             return
         cls._initialize_beans(packages_to_scan)

@@ -4,7 +4,7 @@ from rhazes.decorator import bean
 from rhazes.scope import Scope
 
 
-class SomeABC:
+class SomeABC(ABC):
     pass
 
 
