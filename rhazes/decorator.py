@@ -1,9 +1,8 @@
-import functools
 import inspect
 from typing import Optional, Dict, Type, List, Union
 
-from rhazes.context import ApplicationContext
 from rhazes.bean_builder import DefaultBeanBuilderStrategy
+from rhazes.context import ApplicationContext
 from rhazes.protocol import InjectionConfiguration, BeanDetails, BeanBuilderStrategy
 
 
@@ -58,19 +57,7 @@ def inject(injections=None, configuration: Dict[Type, InjectionConfiguration] = 
 
     def decorator(obj_of_func):
 
-        if isinstance(obj_of_func, type):
-            # We are dealing with a class
-            @functools.wraps(obj_of_func, updated=())
-            class Proxy(obj_of_func):
-                def __init__(self, *args, **kwargs):
-                    inject_kwargs(
-                        injections, configuration, obj_of_func.__init__, kwargs
-                    )
-                    super(obj_of_func, self).__init__(*args, **kwargs)
-
-            return Proxy
-
-        elif callable(obj_of_func):
+        if callable(obj_of_func):
 
             if obj_of_func.__name__ == "__init__":  # constructor
 

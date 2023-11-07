@@ -1,6 +1,8 @@
-import importlib
 import inspect
-from typing import List, Set
+from typing import List
+import importlib
+from pkgutil import iter_modules
+from setuptools import find_packages
 
 
 def class_scanner(module: str, selector=lambda x: True):
@@ -19,53 +21,27 @@ class ModuleScanner:
     def __init__(self, roots_to_scan: List[str]):
         self.roots_to_scan = roots_to_scan
 
-    def _list_submodules(self, module) -> list[str]:
-        """
-        Args:
-            module: The module to list submodules from.
-        """
-        # We first respect __all__ attribute if it already defined.
-        submodules = getattr(module, "__all__", None)
-        if submodules:
-            return submodules
+    def find_submodules(self, package, pkgpath):
+        modules = set()
+        for info in iter_modules([pkgpath]):
+            if not info.ispkg:
+                modules.add(package + "." + info.name)
+        return modules
 
-        # Then, we respect __init__.py file to get imported submodules.
-        import inspect
-
-        submodules = [
-            o[0] for o in inspect.getmembers(module) if inspect.ismodule(o[1])
-        ]
-        if submodules:
-            return submodules
-
-        # Finally we can just scan for submodules via pkgutil.
-        import pkgutil
-
-        # pkgutill will invoke `importlib.machinery.all_suffixes()` to
-        # determine whether a file is a module or not, so if you get
-        # any submoudles that are unexpected to get, you need to check
-        # this function to do the confirmation.
-        # If you want to retrive a directory as a submoudle, you will
-        # need to clarify this by putting a `__init__.py`` file in the
-        # folder, even for Python3.
-        if hasattr(module, "__path__"):
-            return [x.name for x in pkgutil.iter_modules(module.__path__)]
-        return []
-
-    def scan(self) -> Set[str]:
-        packages = set()
-        for pkg in self.roots_to_scan:
-            packages.update(self._scan(pkg))
-        return packages
-
-    def _scan(self, pkg) -> Set[str]:
-        packages = set()
+    def recurse_modules(self, package):
+        modules = set()
         try:
-            mod = importlib.import_module(pkg)
-            for item in self._list_submodules(mod):
-                sub_m = f"{pkg}.{item}"
-                packages.update(self._scan(sub_m))
-            packages.add(pkg)
+            base_package_path = importlib.import_module(package).__path__[0]
         except ModuleNotFoundError:
-            pass
-        return packages
+            return modules
+        modules.add(package)
+        modules.update(self.find_submodules(package, base_package_path))
+        for pkg in find_packages(base_package_path):
+            modules.update(self.recurse_modules(f"{package}.{pkg}"))
+        return modules
+
+    def scan(self):
+        modules = set()
+        for package in self.roots_to_scan:
+            modules.update(self.recurse_modules(package))
+        return modules

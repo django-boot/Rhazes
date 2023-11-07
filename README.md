@@ -193,8 +193,8 @@ class SomeBean:
     pass
 
 
-@inject()
 class MyClazz:
+    @inject()
     def __init__(self, bean: SomeBean, random_input: str):
         ...
 
