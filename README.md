@@ -128,6 +128,11 @@ class SomeBeanFactory(BeanFactory):
 
 ```
 
+**Note**: Factory beans don't obey `primary` keyword. Assure that you have single factory for a class or an interface, or the behaviour may be nondeterministic.
+
+You can also use `_for` keyword of `@bean` instead of implementing `produces(cls)` method.
+In face the default implementation of `produces` method checks for `_for` keyword.
+Quickest usage however is to implement the method.
 
 ### Singleton
 

@@ -33,3 +33,12 @@ class SomeInterfaceFactory(BeanFactory):
                 return factory.tsg.get_string()
 
         return SomeInterfaceImpl()
+
+
+@bean()
+class SomeInterfaceUsage:
+    def __init__(self, interface: SomeInterface):
+        self.interface = interface
+
+    def get_name(self):
+        return self.interface.name()

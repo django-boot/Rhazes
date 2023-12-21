@@ -74,12 +74,14 @@ class DependencyNodeMetadata:
         cls,
         bean_classes: Iterable[BeanProtocol],
         bean_interface_mapping: Dict[Type, Type],
+        beans_with_factory: Iterable[Type],
     ):
         """
         Generates DependencyNodeMetadata instance for a class (cls) after validating its constructor dependencies
         :param cls: class to generate DependencyNodeMetadata for
         :param bean_classes: other bean classes, possible to depend on
         :param bean_interface_mapping: possible classes to depend on
+        :param beans_with_factory: beans that are created by factories
         :return: generated DependencyNodeMetadata
         """
         args = []
@@ -107,7 +109,7 @@ class DependencyNodeMetadata:
             else:
                 clazz = v.annotation
 
-            if clazz in bean_classes:
+            if clazz in bean_classes or clazz in beans_with_factory:
                 dependencies.append(clazz)
                 args.append(None)
                 dependency_position[clazz] = i

@@ -1,4 +1,4 @@
-from typing import Set, Type
+from typing import Set, Type, List
 
 from rhazes.collections.stack import UniqueStack
 from rhazes.exceptions import DependencyCycleException
@@ -6,6 +6,7 @@ from rhazes.protocol import (
     BeanProtocol,
     DependencyNodeMetadata,
     DependencyNode,
+    BeanFactory,
 )
 
 
@@ -15,6 +16,7 @@ class DependencyResolver:
             bean_classes if bean_classes is not None else set()
         )
         self.bean_interface_map = {}
+        self.factory_beans = self.get_factory_beans()
         self.fill_bean_interface_map()
         self.builders = {}
         self.node_registry = {}
@@ -24,6 +26,17 @@ class DependencyResolver:
         mapping = self.bean_interface_map.get(interface, [])
         mapping.append(cls)
         self.bean_interface_map[interface] = mapping
+
+    def get_factory_beans(self) -> List[Type]:
+        """
+        :return: list of production from beans that are factory
+        """
+        return [
+            bean.produces()
+            for bean in filter(
+                lambda bean: issubclass(bean, BeanFactory), self.bean_classes
+            )
+        ]
 
     def fill_bean_interface_map(self):
         # Map list of implementations (value) for each bean interface (value)
@@ -68,9 +81,13 @@ class DependencyResolver:
         :return generated DependencyNodeMetadata
         """
         metadata = DependencyNodeMetadata.generate(
-            cls, self.bean_classes, self.bean_interface_map
+            cls, self.bean_classes, self.bean_interface_map, self.factory_beans
         )
         self.node_metadata_registry[cls] = metadata
+
+        if metadata.is_factory:
+            self.node_metadata_registry[metadata.bean_for] = metadata
+
         return metadata
 
     def resolve(self) -> dict:

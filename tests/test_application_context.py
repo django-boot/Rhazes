@@ -13,7 +13,11 @@ from tests.data.di.context.di_context import (
     DepD,
     DepE,
 )
-from tests.data.di.factory.di_factory import SomeInterface, TestStringGeneratorBean
+from tests.data.di.factory.di_factory import (
+    SomeInterface,
+    TestStringGeneratorBean,
+    SomeInterfaceUsage,
+)
 
 
 class ApplicationContextTestCase(TestCase):
@@ -62,6 +66,15 @@ class ApplicationContextTestCase(TestCase):
         self.assertIsNotNone(test_string_generator)
         si: SomeInterface = self.application_context.get_bean(SomeInterface)
         self.assertEqual(si.name(), test_string_generator.get_string())
+
+    def test_factory_product_as_dependency(self):
+        self.assertTrue(self.application_context._initialized)
+        self.assertIsNotNone(self.application_context.get_bean(SomeInterfaceUsage))
+        usage: SomeInterfaceUsage = self.application_context.get_bean(
+            SomeInterfaceUsage
+        )
+        self.assertIsNotNone(usage.get_name())
+        # print(usage.get_name())
 
 
 class TemporaryContextTestCase(TestCase):

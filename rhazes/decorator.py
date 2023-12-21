@@ -3,7 +3,12 @@ from typing import Optional, Dict, Type, List, Union
 
 from rhazes.bean_builder import DefaultBeanBuilderStrategy
 from rhazes.context import ApplicationContext
-from rhazes.protocol import InjectionConfiguration, BeanDetails, BeanBuilderStrategy
+from rhazes.protocol import (
+    InjectionConfiguration,
+    BeanDetails,
+    BeanBuilderStrategy,
+    BeanFactory,
+)
 
 
 def bean(
@@ -13,7 +18,11 @@ def bean(
     lazy_dependencies: Optional[List[Union[type, str]]] = None,
 ):
     def decorator(cls):
-        if _for is not None and not issubclass(cls, _for):
+        if (
+            _for is not None
+            and not issubclass(cls, BeanFactory)
+            and not issubclass(cls, _for)
+        ):
             raise Exception(
                 f"{cls} bean is meant to be registered for interface {_for} "
                 f"but its not a subclass of that interface"
